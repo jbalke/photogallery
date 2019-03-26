@@ -64,3 +64,7 @@ images/**
 .config
 notes/**
 .vscode/**
+
+# Exclude our config files
+.prettierrc
+runner.conf
