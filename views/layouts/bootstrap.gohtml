@@ -14,13 +14,12 @@
       rel="stylesheet"
     />
   </head>
-  {{template "navbar"}}
   <body>
+    {{template "navbar"}}
     <main class="container-fluid">
       {{template "yield" .}}
-
-      {{template "footer"}}
     </main>
+    {{template "footer"}}
 
     <script
       src="//code.jquery.com/jquery-3.3.1.slim.min.js"
