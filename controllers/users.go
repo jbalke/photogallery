@@ -4,13 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	schema "github.com/gorilla/Schema"
-
 	"lenslocked.com/views"
 )
-
-// Declared globally due to metadata caching benefit.
-var dec = schema.NewDecoder()
 
 // NewUsers is used to create a new Users controller.
 // This function will panic if the templates are not parsed
@@ -43,12 +38,9 @@ func (u Users) New(w http.ResponseWriter, r *http.Request) {
 //
 // POST /signup
 func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		panic(err)
-	}
-
 	var form SignupForm
-	if err := dec.Decode(&form, r.PostForm); err != nil {
+
+	if err := ParseForm(r, &form); err != nil {
 		panic(err)
 	}
 
