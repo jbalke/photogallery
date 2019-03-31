@@ -63,7 +63,7 @@ images/**
 
 .config
 notes/**
-.vscode/**
+.vscode/
 
 # Exclude our config files
 .prettierrc
