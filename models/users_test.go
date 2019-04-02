@@ -8,14 +8,13 @@ import (
 
 func testingUserService() (*UserService, error) {
 	const (
-		host     = "localhost"
-		port     = 5432
-		user     = "postgres"
-		password = ""
-		dbname   = "lenslocked_test"
+		host   = "localhost"
+		port   = 5432
+		user   = "postgres"
+		dbname = "lenslocked_test"
 	)
 
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", host, port, user, dbname)
 	us, err := NewUserService(psqlInfo)
 	if err != nil {
 		return nil, err

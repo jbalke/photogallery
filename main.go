@@ -16,32 +16,27 @@ const (
 	user     = "postgres"
 	password = ""
 	dbname   = "lenslocked_dev"
+	httpPort = ":3000"
 )
 
 func main() {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", host, port, user, dbname)
 	us, err := models.NewUserService(psqlInfo)
 	if err != nil {
 		panic(err)
 	}
 	defer us.Close()
-	//us.DestructiveReset()
-
-	user, err := us.ByID(2)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(user)
 
 	staticController := controllers.NewStatic()
-	usersController := controllers.NewUsers()
+	usersController := controllers.NewUsers(us)
 
 	r := mux.NewRouter()
 	r.Handle("/", staticController.Home).Methods("GET")
 	r.Handle("/contact", staticController.Contact).Methods("GET")
 	r.HandleFunc("/signup", usersController.New).Methods("GET")
 	r.HandleFunc("/signup", usersController.Create).Methods("POST")
-	http.ListenAndServe(":3000", r)
+	fmt.Println("Server listening on port", httpPort)
+	http.ListenAndServe(httpPort, r)
 }
 
 func must(err error) {
