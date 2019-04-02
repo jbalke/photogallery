@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 
 	"lenslocked.com/models"
@@ -57,5 +56,6 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Fprintln(w, form)
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
