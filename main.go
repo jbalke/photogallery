@@ -25,7 +25,7 @@ func main() {
 	must(err)
 	defer us.Close()
 
-	err = us.AutoMigrate()
+	err = us.AutoMigrate() // us.DestructiveReset()
 	must(err)
 
 	staticController := controllers.NewStatic()
