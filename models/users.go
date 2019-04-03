@@ -9,6 +9,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const userPwPepper = "7SZ5t9epC5RFv&*"
+
 var (
 	// ErrNotFound is returned when a resource can not be found in the DB.
 	ErrNotFound = errors.New("models: resource not found")
@@ -56,7 +58,8 @@ func (us *UserService) ByEmail(email string) (*User, error) {
 // Create will create the provided user and backfill data
 // like the ID, CreatedAt and UpdatedAt fields.
 func (us *UserService) Create(user *User) error {
-	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	pwBytes := []byte(user.Password + userPwPepper)
+	hashedBytes, err := bcrypt.GenerateFromPassword(pwBytes, bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
