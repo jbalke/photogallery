@@ -1,0 +1,39 @@
+{{define "yield"}}
+<div class="row">
+  <div class="col-lg-4 offset-lg-4 col-md-6 offset-md-3 col-sm-8 offset-sm-2">
+    <div class="card border-primary">
+      <h5 class="card-header bg-primary text-white">Welcome Back!</h5>
+      <div class="card-body">
+        {{template "loginForm"}}
+      </div>
+    </div>
+  </div>
+</div>
+{{ end }}
+
+{{define "loginForm"}}
+<form action="/login" method="POST">
+  <div class="form-group">
+    <label for="email" class="font-weight-bold">Email address</label>
+    <input
+      name="email"
+      type="email"
+      class="form-control"
+      id="email"
+      aria-describedby="emailHelp"
+      placeholder="Enter email"
+    />
+  </div>
+  <div class="form-group">
+    <label for="password" class="font-weight-bold">Password</label>
+    <input
+      name="password"
+      type="password"
+      class="form-control"
+      id="password"
+      placeholder="Password"
+    />
+  </div>
+  <button type="submit" class="btn btn-primary">Login</button>
+</form>
+{{ end }}

@@ -17,6 +17,8 @@ var (
 
 	// ErrInvalidID is returned when an invalid ID is provided to a method like Delete.
 	ErrInvalidID = errors.New("models: ID provided is invalid")
+
+	ErrInvalidCreds = errors.New("models: No user found with these credentials")
 )
 
 func NewUserService(connectionInfo string) (*UserService, error) {
@@ -66,6 +68,19 @@ func (us *UserService) Create(user *User) error {
 	user.PasswordHash = string(hashedBytes)
 	user.Password = ""
 	return us.db.Create(user).Error
+}
+
+func (us *UserService) Authenticate(email string, password string) (*User, error) {
+	pwBytes := []byte(password + userPwPepper)
+	user, err := us.ByEmail(email)
+	if err != nil {
+		return nil, ErrInvalidCreds
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), pwBytes)
+	if err != nil {
+		return nil, ErrInvalidCreds
+	}
+	return user, nil
 }
 
 // Update will update the persisted user with the provided user instance.
