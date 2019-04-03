@@ -75,18 +75,21 @@ type LoginForm struct {
 // POST /login
 func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 	var form LoginForm
-	var user *models.User
 
 	if err := ParseForm(r, &form); err != nil {
 		panic(err)
 	}
 
 	user, err := u.us.Authenticate(form.Email, form.Password)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
+	switch err {
+	case models.ErrNotFound:
+		fmt.Fprintln(w, "Invalid rmail address.")
+	case models.ErrInvalidPassword:
+		fmt.Fprintln(w, "Invalid password provided.")
+	case nil:
+		fmt.Fprint(w, user)
+	default:
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-
-	fmt.Fprint(w, user)
 	//http.Redirect(w, r, "/", http.StatusSeeOther)
 }
