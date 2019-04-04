@@ -61,7 +61,9 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	signIn(w, &user)
+	//fmt.Fprintln(w, user)
+	http.Redirect(w, r, "/cookietest", http.StatusFound)
 }
 
 type LoginForm struct {
@@ -93,12 +95,28 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	signIn(w, user)
+	//	fmt.Fprint(w, user)
+	http.Redirect(w, r, "/cookietest", http.StatusFound)
+}
+
+// signIn sets the cookie for the user's session
+func signIn(w http.ResponseWriter, user *models.User) {
 	// need to set cookie before writing to ResponseWriter
 	cookie := http.Cookie{
-		Name:  "email",
-		Value: user.Email,
+		Name:   "email",
+		Value:  user.Email,
+		MaxAge: 60 * 5,
 	}
 	http.SetCookie(w, &cookie)
-	fmt.Fprint(w, user)
-	//http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+// CookieTest is used to display cookies set on the current user
+func (u *Users) CookieTest(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("email")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fmt.Fprintln(w, "Email is:", cookie.Value)
 }
