@@ -147,6 +147,11 @@ func (us *UserService) Update(user *User) error {
 	return us.db.Save(user).Error
 }
 
+// UpdateRememberHash will update the remember hash stored on the user.
+func (us *UserService) UpdateRememberHash(user *User) error {
+	return us.db.Model(user).Update("remember_hash", user.RememberHash).Error
+}
+
 // Delete will delete the given user from the db.
 func (us *UserService) Delete(id uint) error {
 	if id == 0 {

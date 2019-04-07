@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"lenslocked.com/models"
+	"lenslocked.com/rand"
 	"lenslocked.com/views"
 )
 
@@ -61,7 +62,11 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	signIn(w, &user)
+	err := u.signIn(w, &user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	//fmt.Fprintln(w, user)
 	http.Redirect(w, r, "/cookietest", http.StatusFound)
 }
@@ -92,31 +97,53 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintln(w, "Invalid password provided.")
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	}
 
-	signIn(w, user)
+	err = u.signIn(w, user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	//	fmt.Fprint(w, user)
 	http.Redirect(w, r, "/cookietest", http.StatusFound)
 }
 
 // signIn sets the cookie for the user's session
-func signIn(w http.ResponseWriter, user *models.User) {
+func (u *Users) signIn(w http.ResponseWriter, user *models.User) error {
+	if user.Remember == "" {
+		token, err := rand.RememberToken()
+		if err != nil {
+			return err
+		}
+		user.Remember = token
+		err = u.us.UpdateRememberHash(user)
+		if err != nil {
+			return err
+		}
+	}
 	// need to set cookie before writing to ResponseWriter
 	cookie := http.Cookie{
-		Name:   "email",
-		Value:  user.Email,
-		MaxAge: 60 * 5,
+		Name:   "remember_token",
+		Value:  user.Remember,
+		MaxAge: 60 * 60, // 1 hr
 	}
 	http.SetCookie(w, &cookie)
+	return nil
 }
 
 // CookieTest is used to display cookies set on the current user
 func (u *Users) CookieTest(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("email")
+	cookie, err := r.Cookie("remember_token")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Fprintln(w, "Email is:", cookie.Value)
+	user, err := u.us.ByRemember(cookie.Value)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fmt.Fprintln(w, "User is: ", user)
 }
