@@ -125,9 +125,10 @@ func (u *Users) signIn(w http.ResponseWriter, user *models.User) error {
 	}
 	// need to set cookie before writing to ResponseWriter
 	cookie := http.Cookie{
-		Name:   "remember_token",
-		Value:  user.Remember,
-		MaxAge: 60 * 60, // 1 hr
+		Name:     "remember_token",
+		Value:    user.Remember,
+		MaxAge:   60 * 60, // 1 hr
+		HttpOnly: true,    // prevents non-http access to cookie e.g. from client javascript
 	}
 	http.SetCookie(w, &cookie)
 	return nil
