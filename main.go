@@ -21,7 +21,7 @@ const (
 
 func main() {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", host, port, user, dbname)
-	us, err := models.NewUserService(psqlInfo)
+	us, err := models.NewUserService(psqlInfo, true)
 	must(err)
 	defer us.Close()
 

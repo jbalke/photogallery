@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func testingUserService() (*UserService, error) {
+func testingUserService() (UserService, error) {
 	const (
 		host   = "localhost"
 		port   = 5432
@@ -15,11 +15,10 @@ func testingUserService() (*UserService, error) {
 	)
 
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", host, port, user, dbname)
-	us, err := NewUserService(psqlInfo)
+	us, err := NewUserService(psqlInfo, false)
 	if err != nil {
 		return nil, err
 	}
-	us.db.LogMode(false)
 
 	// Clear users table between tests
 	us.DestructiveReset()

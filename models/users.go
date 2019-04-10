@@ -65,8 +65,8 @@ type UserService interface {
 
 // NewUserService takes a connection string for the DB and returns a *UserService.
 // If the returned error is not nil, there was a problem opening the database.
-func NewUserService(connectionInfo string) (UserService, error) {
-	ug, err := newUserGorm(connectionInfo)
+func NewUserService(connectionInfo string, logging bool) (UserService, error) {
+	ug, err := newUserGorm(connectionInfo, logging)
 	if err != nil {
 		return nil, err
 	}
@@ -93,12 +93,12 @@ func (uv *userValildator) ByID(id uint) (*User, error) {
 	return uv.UserDB.ByID(id)
 }
 
-func newUserGorm(connectionInfo string) (*userGorm, error) {
+func newUserGorm(connectionInfo string, logging bool) (*userGorm, error) {
 	db, err := gorm.Open("postgres", connectionInfo)
 	if err != nil {
 		return nil, err
 	}
-	db.LogMode(true)
+	db.LogMode(logging)
 	hmac := hash.NewHMAC(hmacSecretKey)
 	return &userGorm{
 		db:   db,
