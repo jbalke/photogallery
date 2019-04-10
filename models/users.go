@@ -118,6 +118,17 @@ func (us *userService) Authenticate(email, password string) (*User, error) {
 	return user, nil
 }
 
+type userValFunc func(*User) error
+
+func runUserValFuncs(user *User, fns ...userValFunc) error {
+	for _, fn := range fns {
+		if err := fn(user); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 var _ UserDB = &userValidator{}
 
 type userValidator struct {
@@ -141,12 +152,9 @@ func (uv *userValidator) ByRemember(token string) (*User, error) {
 }
 
 func (uv *userValidator) Create(user *User) error {
-	hashedPassword, err := hashPassword(user.Password)
-	if err != nil {
+	if err := runUserValFuncs(user, uv.bcryptPassword); err != nil {
 		return err
 	}
-	user.PasswordHash = hashedPassword
-	user.Password = ""
 
 	if user.Remember == "" {
 		rememberToken, err := rand.RememberToken()
@@ -159,15 +167,19 @@ func (uv *userValidator) Create(user *User) error {
 	return uv.UserDB.Create(user)
 }
 
-func (uv *userValidator) Update(user *User) error {
-	if user.Password != "" {
-		hashedPassword, err := hashPassword(user.Password)
-		if err != nil {
-			return err
-		}
-		user.Password = ""
-		user.PasswordHash = hashedPassword
+// Delete will delete the given user from the db.
+func (uv *userValidator) Delete(id uint) error {
+	if id == 0 {
+		return ErrInvalidID
 	}
+	return uv.UserDB.Delete(id)
+}
+
+func (uv *userValidator) Update(user *User) error {
+	if err := runUserValFuncs(user, uv.bcryptPassword); err != nil {
+		return err
+	}
+
 	if user.Remember != "" {
 		user.RememberHash = uv.hmac.Hash(user.Remember)
 	}
@@ -179,6 +191,22 @@ func (uv *userValidator) UpdateRememberHash(user *User) error {
 		user.RememberHash = uv.hmac.Hash(user.Remember)
 		return uv.UserDB.UpdateRememberHash(user)
 	}
+	return nil
+}
+
+// bcryptPassword is a helper function to return a hash of the user's password.
+func (uv *userValidator) bcryptPassword(user *User) error {
+	if user.Password == "" {
+		return nil
+	}
+
+	pwBytes := []byte(user.Password + userPwPepper)
+	hashedBytes, err := bcrypt.GenerateFromPassword(pwBytes, bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	user.PasswordHash = string(hashedBytes)
+	user.Password = ""
 	return nil
 }
 
@@ -249,9 +277,6 @@ func (ug *userGorm) UpdateRememberHash(user *User) error {
 
 // Delete will delete the given user from the db.
 func (ug *userGorm) Delete(id uint) error {
-	if id == 0 {
-		return ErrInvalidID
-	}
 	user := User{Model: gorm.Model{ID: id}}
 	return ug.db.Delete(&user).Error
 }
@@ -283,14 +308,4 @@ func first(db *gorm.DB, dst interface{}) error {
 		return ErrNotFound
 	}
 	return err
-}
-
-// hashPassword is a helper function to return a hash of the user's password.
-func hashPassword(password string) (string, error) {
-	pwBytes := []byte(password + userPwPepper)
-	hashedBytes, err := bcrypt.GenerateFromPassword(pwBytes, bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hashedBytes), nil
 }
