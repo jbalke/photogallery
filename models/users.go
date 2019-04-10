@@ -215,6 +215,7 @@ func (ug *userGorm) Update(user *User) error {
 
 // UpdateRememberHash will update the remember hash stored on the user.
 func (ug *userGorm) UpdateRememberHash(user *User) error {
+	user.RememberHash = ug.hmac.Hash(user.Remember)
 	return ug.db.Model(user).Update("remember_hash", user.RememberHash).Error
 }
 
