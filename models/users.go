@@ -54,21 +54,30 @@ var (
 	ErrInvalidPassword = errors.New("models: Incorrect Password")
 )
 
+// UserService is a set of methods used to work with the user model
+type UserService interface {
+	// Authenticate will verify the provided email and password. If correct, the matching
+	// user will be returned. Otherwise an error will be returned: ErrNotFound, ErrInvalidPassword,
+	// or another if something goes wrong.
+	Authenticate(email, password string) (*User, error)
+	UserDB
+}
+
 // NewUserService takes a connection string for the DB and returns a *UserService.
 // If the returned error is not nil, there was a problem opening the database.
-func NewUserService(connectionInfo string) (*UserService, error) {
+func NewUserService(connectionInfo string) (UserService, error) {
 	ug, err := newUserGorm(connectionInfo)
 	if err != nil {
 		return nil, err
 	}
-	return &UserService{
+	return &userService{
 		UserDB: &userValildator{
 			UserDB: ug,
 		},
 	}, nil
 }
 
-type UserService struct {
+type userService struct {
 	UserDB
 }
 
@@ -170,7 +179,7 @@ func (ug *userGorm) Create(user *User) error {
 }
 
 // Authenticate checks for a user with mathcing email and password.
-func (us *UserService) Authenticate(email string, password string) (*User, error) {
+func (us *userService) Authenticate(email string, password string) (*User, error) {
 	pwBytes := []byte(password + userPwPepper)
 	user, err := us.ByEmail(email)
 	if err != nil {

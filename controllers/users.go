@@ -12,7 +12,7 @@ import (
 // NewUsers is used to create a new Users controller.
 // This function will panic if the templates are not parsed
 // correctly so should only be used during initial setup.
-func NewUsers(us *models.UserService) *Users {
+func NewUsers(us models.UserService) *Users {
 	return &Users{
 		NewView:   views.NewView("bootstrap", "users/new"),
 		LoginView: views.NewView("bootstrap", "users/login"),
@@ -23,7 +23,7 @@ func NewUsers(us *models.UserService) *Users {
 type Users struct {
 	NewView   *views.View
 	LoginView *views.View
-	us        *models.UserService
+	us        models.UserService
 }
 
 type SignupForm struct {
@@ -92,9 +92,11 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		case models.ErrNotFound:
-			fmt.Fprintln(w, "Invalid rmail address.")
+			fmt.Fprintln(w, "Invalid email address.")
+			return
 		case models.ErrInvalidPassword:
 			fmt.Fprintln(w, "Invalid password provided.")
+			return
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
