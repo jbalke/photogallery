@@ -179,7 +179,7 @@ func (ug *userGorm) Create(user *User) error {
 }
 
 // Authenticate checks for a user with mathcing email and password.
-func (us *userService) Authenticate(email string, password string) (*User, error) {
+func (us *userService) Authenticate(email, password string) (*User, error) {
 	pwBytes := []byte(password + userPwPepper)
 	user, err := us.ByEmail(email)
 	if err != nil {
