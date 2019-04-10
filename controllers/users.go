@@ -108,7 +108,7 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	//	fmt.Fprint(w, user)
+	//fmt.Fprint(w, user)
 	http.Redirect(w, r, "/cookietest", http.StatusFound)
 }
 

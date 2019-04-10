@@ -83,10 +83,13 @@ func NewUserService(connectionInfo string, logging bool) (UserService, error) {
 	if err != nil {
 		return nil, err
 	}
+	hmac := hash.NewHMAC(hmacSecretKey)
+	uv := &userValidator{
+		hmac:   hmac,
+		UserDB: ug,
+	}
 	return &userService{
-		UserDB: &userValidator{
-			UserDB: ug,
-		},
+		UserDB: uv,
 	}, nil
 }
 
@@ -119,6 +122,7 @@ var _ UserDB = &userValidator{}
 
 type userValidator struct {
 	UserDB
+	hmac hash.HMAC
 }
 
 func (uv *userValidator) ByID(id uint) (*User, error) {
@@ -129,6 +133,55 @@ func (uv *userValidator) ByID(id uint) (*User, error) {
 	return uv.UserDB.ByID(id)
 }
 
+// ByRemember will hash the remember token and then calls
+// ByRemember on the gorm DB layer.
+func (uv *userValidator) ByRemember(token string) (*User, error) {
+	rememberHash := uv.hmac.Hash(token)
+	return uv.UserDB.ByRemember(rememberHash)
+}
+
+func (uv *userValidator) Create(user *User) error {
+	hashedPassword, err := hashPassword(user.Password)
+	if err != nil {
+		return err
+	}
+	user.PasswordHash = hashedPassword
+	user.Password = ""
+
+	if user.Remember == "" {
+		rememberToken, err := rand.RememberToken()
+		if err != nil {
+			return err
+		}
+		user.Remember = rememberToken
+	}
+	user.RememberHash = uv.hmac.Hash(user.Remember)
+	return uv.UserDB.Create(user)
+}
+
+func (uv *userValidator) Update(user *User) error {
+	if user.Password != "" {
+		hashedPassword, err := hashPassword(user.Password)
+		if err != nil {
+			return err
+		}
+		user.Password = ""
+		user.PasswordHash = hashedPassword
+	}
+	if user.Remember != "" {
+		user.RememberHash = uv.hmac.Hash(user.Remember)
+	}
+	return uv.UserDB.Update(user)
+}
+
+func (uv *userValidator) UpdateRememberHash(user *User) error {
+	if user.Remember != "" {
+		user.RememberHash = uv.hmac.Hash(user.Remember)
+		return uv.UserDB.UpdateRememberHash(user)
+	}
+	return nil
+}
+
 var _ UserDB = &userGorm{}
 
 func newUserGorm(connectionInfo string, logging bool) (*userGorm, error) {
@@ -137,16 +190,13 @@ func newUserGorm(connectionInfo string, logging bool) (*userGorm, error) {
 		return nil, err
 	}
 	db.LogMode(logging)
-	hmac := hash.NewHMAC(hmacSecretKey)
 	return &userGorm{
-		db:   db,
-		hmac: hmac,
+		db: db,
 	}, nil
 }
 
 type userGorm struct {
-	db   *gorm.DB
-	hmac hash.HMAC
+	db *gorm.DB
 }
 
 func (ug *userGorm) ByID(id uint) (*User, error) {
@@ -171,12 +221,10 @@ func (ug *userGorm) ByEmail(email string) (*User, error) {
 }
 
 // ByRemember looks up the user with the given remember token.
-// This method will handle hashing the token for comparison with stored hashed tokens.
-func (ug *userGorm) ByRemember(token string) (*User, error) {
+// This method expects the rememberToken to be hashed for comparison with stored hashed token.
+func (ug *userGorm) ByRemember(rememberHash string) (*User, error) {
 	var user User
-	hashedToken := ug.hmac.Hash(token)
-	db := ug.db.Where("remember_hash = ?", hashedToken)
-	err := first(db, &user)
+	err := first(ug.db.Where("remember_hash = ?", rememberHash), &user)
 	if err != nil {
 		return nil, err
 	}
@@ -186,43 +234,16 @@ func (ug *userGorm) ByRemember(token string) (*User, error) {
 // Create will create the provided user and backfill data
 // like the ID, CreatedAt and UpdatedAt fields.
 func (ug *userGorm) Create(user *User) error {
-	hashedPassword, err := hashPassword(user.Password)
-	if err != nil {
-		return err
-	}
-	user.PasswordHash = hashedPassword
-	user.Password = ""
-
-	if user.Remember == "" {
-		rememberToken, err := rand.RememberToken()
-		if err != nil {
-			return err
-		}
-		user.Remember = rememberToken
-	}
-	user.RememberHash = ug.hmac.Hash(user.Remember)
 	return ug.db.Create(user).Error
 }
 
 // Update will update the persisted user with the provided user instance.
 func (ug *userGorm) Update(user *User) error {
-	if user.Password != "" {
-		hashedPassword, err := hashPassword(user.Password)
-		if err != nil {
-			return err
-		}
-		user.Password = ""
-		user.PasswordHash = hashedPassword
-	}
-	if user.Remember != "" {
-		user.RememberHash = ug.hmac.Hash(user.Remember)
-	}
 	return ug.db.Save(user).Error
 }
 
 // UpdateRememberHash will update the remember hash stored on the user.
 func (ug *userGorm) UpdateRememberHash(user *User) error {
-	user.RememberHash = ug.hmac.Hash(user.Remember)
 	return ug.db.Model(user).Update("remember_hash", user.RememberHash).Error
 }
 
