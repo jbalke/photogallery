@@ -2,6 +2,8 @@ package models
 
 import (
 	"errors"
+	"regexp"
+	"strings"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -20,6 +22,15 @@ var (
 
 	// ErrInvalidPassword is returned when the credentials provided to Authenticate() are incorrect.
 	ErrInvalidPassword = errors.New("models: Incorrect Password")
+
+	// ErrEmailRequired is returned when an email address is not provided for user creation\update.
+	ErrEmailRequired = errors.New("models: Email address is required")
+
+	// ErrEmailInvalid is returned when a provided email does not match our expected pattern.
+	ErrEmailInvalid = errors.New("models: Email address is not valid")
+
+	// ErrEmailTaken is returned when a user attempts to register an email address that is taken by another user.
+	ErrEmailTaken = errors.New("models: Email address is already taken")
 )
 
 const userPwPepper = "7SZ5t9epC5RFv&*"
@@ -84,10 +95,8 @@ func NewUserService(connectionInfo string, logging bool) (UserService, error) {
 		return nil, err
 	}
 	hmac := hash.NewHMAC(hmacSecretKey)
-	uv := &userValidator{
-		hmac:   hmac,
-		UserDB: ug,
-	}
+	uv := newUserValidator(ug, hmac)
+
 	return &userService{
 		UserDB: uv,
 	}, nil
@@ -101,12 +110,11 @@ type userService struct {
 
 // Authenticate checks for a user with mathcing email and password.
 func (us *userService) Authenticate(email, password string) (*User, error) {
-	pwBytes := []byte(password + userPwPepper)
 	user, err := us.ByEmail(email)
 	if err != nil {
 		return nil, err
 	}
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), pwBytes)
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password+userPwPepper))
 	if err != nil {
 		switch err {
 		case bcrypt.ErrMismatchedHashAndPassword:
@@ -131,9 +139,30 @@ func runUserValFuncs(user *User, fns ...userValFunc) error {
 
 var _ UserDB = &userValidator{}
 
+func newUserValidator(udb UserDB, hmac hash.HMAC) *userValidator {
+	return &userValidator{
+		UserDB:     udb,
+		hmac:       hmac,
+		emailRegex: regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,16}$`),
+	}
+}
+
 type userValidator struct {
 	UserDB
-	hmac hash.HMAC
+	hmac       hash.HMAC
+	emailRegex *regexp.Regexp
+}
+
+// ByEmail will normalise the email address before calling ByEmail on UserDB.
+func (uv *userValidator) ByEmail(email string) (*User, error) {
+	user := User{
+		Email: email,
+	}
+	err := runUserValFuncs(&user, uv.normaliseEmail)
+	if err != nil {
+		return nil, err
+	}
+	return uv.UserDB.ByEmail(user.Email)
 }
 
 func (uv *userValidator) ByID(id uint) (*User, error) {
@@ -158,7 +187,16 @@ func (uv *userValidator) ByRemember(token string) (*User, error) {
 }
 
 func (uv *userValidator) Create(user *User) error {
-	err := runUserValFuncs(user, uv.bcryptPassword, uv.setDefaultRemember, uv.hmacRemember)
+	err := runUserValFuncs(user,
+		uv.requireName,
+		uv.passwordIsComplex,
+		uv.bcryptPassword,
+		uv.setDefaultRemember,
+		uv.hmacRemember,
+		uv.requireEmail,
+		uv.emailFormat,
+		uv.normaliseEmail,
+		uv.emailIsAvail)
 	if err != nil {
 		return err
 	}
@@ -177,7 +215,15 @@ func (uv *userValidator) Delete(id uint) error {
 }
 
 func (uv *userValidator) Update(user *User) error {
-	err := runUserValFuncs(user, uv.bcryptPassword, uv.hmacRemember)
+	err := runUserValFuncs(user,
+		uv.requireName,
+		uv.passwordIsComplex,
+		uv.bcryptPassword,
+		uv.hmacRemember,
+		uv.requireEmail,
+		uv.emailFormat,
+		uv.normaliseEmail,
+		uv.emailIsAvail)
 	if err != nil {
 		return err
 	}
@@ -236,6 +282,64 @@ func (uv *userValidator) idGreaterThan(n uint) userValFunc {
 		}
 		return nil
 	})
+}
+
+func (uv *userValidator) normaliseEmail(user *User) error {
+	user.Email = strings.TrimSpace(strings.ToLower(user.Email))
+	return nil
+}
+
+func (uv *userValidator) requireEmail(user *User) error {
+	if user.Email == "" {
+		return ErrEmailRequired
+	}
+	return nil
+}
+
+func (uv *userValidator) emailFormat(user *User) error {
+	if user.Email == "" {
+		return nil
+	}
+	if !uv.emailRegex.MatchString(user.Email) {
+		return ErrEmailInvalid
+	}
+	return nil
+}
+
+func (uv *userValidator) emailIsAvail(user *User) error {
+	existing, err := uv.ByEmail(user.Email)
+	if err == ErrNotFound {
+		// Email address is not taken
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	// We found a user with this email address.
+	// If the found user ID does not equal the provided user's ID,
+	// the email address is not available.
+	if existing.ID != user.ID {
+		return ErrEmailTaken
+	}
+	return nil
+}
+
+func (uv *userValidator) requireName(user *User) error {
+	user.Name = strings.TrimSpace(user.Name)
+	if user.Name == "" {
+		return errors.New("models: Name is required")
+	}
+	return nil
+}
+
+func (uv *userValidator) passwordIsComplex(user *User) error {
+	user.Password = strings.TrimSpace(user.Password)
+
+	if len([]rune(user.Password)) < 6 {
+		return errors.New("models: Password must be 6 characters or greater")
+	}
+
+	return nil
 }
 
 var _ UserDB = &userGorm{}
