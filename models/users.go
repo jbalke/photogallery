@@ -158,14 +158,7 @@ func (uv *userValidator) ByRemember(token string) (*User, error) {
 }
 
 func (uv *userValidator) Create(user *User) error {
-	if user.Remember == "" {
-		rememberToken, err := rand.RememberToken()
-		if err != nil {
-			return err
-		}
-		user.Remember = rememberToken
-	}
-	err := runUserValFuncs(user, uv.bcryptPassword, uv.hmacRemember)
+	err := runUserValFuncs(user, uv.bcryptPassword, uv.setDefaultRemember, uv.hmacRemember)
 	if err != nil {
 		return err
 	}
@@ -188,12 +181,13 @@ func (uv *userValidator) Update(user *User) error {
 	return uv.UserDB.Update(user)
 }
 
+// UpdateRememberHash takes a user and persists the hashed remember token if a remember token is set.
 func (uv *userValidator) UpdateRememberHash(user *User) error {
-	if user.Remember != "" {
-		user.RememberHash = uv.hmac.Hash(user.Remember)
-		return uv.UserDB.UpdateRememberHash(user)
+	err := runUserValFuncs(user, uv.hmacRemember)
+	if err != nil {
+		return err
 	}
-	return nil
+	return uv.UserDB.UpdateRememberHash(user)
 }
 
 // bcryptPassword is a helper function to return a hash of the user's password.
@@ -217,6 +211,18 @@ func (uv *userValidator) hmacRemember(user *User) error {
 		return nil
 	}
 	user.RememberHash = uv.hmac.Hash(user.Remember)
+	return nil
+}
+
+func (uv *userValidator) setDefaultRemember(user *User) error {
+	if user.Remember != "" {
+		return nil
+	}
+	rememberToken, err := rand.RememberToken()
+	if err != nil {
+		return err
+	}
+	user.Remember = rememberToken
 	return nil
 }
 
