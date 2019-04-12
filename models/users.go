@@ -30,21 +30,29 @@ var (
 	ErrIDInvalid = errors.New("models: ID provided is invalid")
 
 	// ErrPasswordIncorrect is returned when the credentials provided to Authenticate() are incorrect.
-	ErrPasswordIncorrect = errors.New("models: Incorrect Password")
+	ErrPasswordIncorrect = errors.New("models: incorrect password")
 
 	// ErrEmailRequired is returned when an email address is not provided for user creation\update.
-	ErrEmailRequired = errors.New("models: Email address is required")
+	ErrEmailRequired = errors.New("models: email address is required")
 
 	// ErrEmailInvalid is returned when a provided email does not match our expected pattern.
-	ErrEmailInvalid = errors.New("models: Email address is not valid")
+	ErrEmailInvalid = errors.New("models: email address is not valid")
 
 	// ErrEmailTaken is returned when a user attempts to register an email address that is taken by another user.
-	ErrEmailTaken = errors.New("models: Email address is already taken")
+	ErrEmailTaken = errors.New("models: email address is already taken")
 
 	// ErrPasswordRequired is returned if the user does not provide a password when signing up.
-	ErrPasswordRequired = errors.New("models: Password is required")
+	ErrPasswordRequired = errors.New("models: password is required")
 
-	ErrPasswordNotComplex = fmt.Errorf("models: Password must be between %d and %d characters long and include a lowercase and uppercase character, a number and a symbol", minPasswordLength, maxPasswordLength)
+	// ErrPasswordNotComplex is returned if a provided password does not meet complexity requirements.
+	// Passwords must be between 6 and 13 characters long and include lowercase and uppercase characters, as well as a number and symbol.
+	ErrPasswordNotComplex = fmt.Errorf("models: password must be between %d and %d characters long and include a lowercase and uppercase character, a number and a symbol", minPasswordLength, maxPasswordLength)
+
+	// ErrRememberTooShort is returned if a user's remember token is less than 32 bytes.
+	ErrRememberTooShort = errors.New("model: remember token must be at least 32 bytes")
+
+	// ErrRememberHashRequired is returned if a remember hash is not present on user create and update.
+	ErrRememberHashRequired = errors.New("model: remember hash is required")
 )
 
 // User represents the use model in our DB.
@@ -210,7 +218,9 @@ func (uv *userValidator) Create(user *User) error {
 		uv.bcryptPassword,
 		uv.passwordHashRequired,
 		uv.setDefaultRemember,
+		uv.rememberMinBytes,
 		uv.hmacRemember,
+		uv.rememberHashRequired,
 	)
 	if err != nil {
 		return err
@@ -236,7 +246,9 @@ func (uv *userValidator) Update(user *User) error {
 		uv.passwordIsComplex(minPasswordLength, maxPasswordLength),
 		uv.bcryptPassword,
 		uv.passwordHashRequired,
+		uv.rememberMinBytes,
 		uv.hmacRemember,
+		uv.rememberHashRequired,
 		uv.emailFormat,
 		uv.normaliseEmail,
 		uv.emailIsAvail)
@@ -288,6 +300,27 @@ func (uv *userValidator) setDefaultRemember(user *User) error {
 		return err
 	}
 	user.Remember = rememberToken
+	return nil
+}
+
+func (uv *userValidator) rememberMinBytes(user *User) error {
+	if user.Remember == "" {
+		return nil
+	}
+	n, err := rand.NBytes(user.Remember)
+	if err != nil {
+		return err
+	}
+	if n < rand.RememberTokenBytes {
+		return ErrRememberTooShort
+	}
+	return nil
+}
+
+func (uv *userValidator) rememberHashRequired(user *User) error {
+	if user.RememberHash == "" {
+		return ErrRememberHashRequired
+	}
 	return nil
 }
 
