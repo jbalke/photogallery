@@ -30,7 +30,11 @@ var (
 	ErrIDInvalid = errors.New("models: ID provided is invalid")
 
 	// ErrPasswordIncorrect is returned when the credentials provided to Authenticate() are incorrect.
+<<<<<<< HEAD
 	ErrPasswordIncorrect = errors.New("models: incorrect password")
+=======
+	ErrPasswordIncorrect = errors.New("models: Incorrect Password")
+>>>>>>> 3c88791483ce08eeab66745e3f7f3879e066e0ef
 
 	// ErrEmailRequired is returned when an email address is not provided for user creation\update.
 	ErrEmailRequired = errors.New("models: email address is required")
@@ -39,6 +43,7 @@ var (
 	ErrEmailInvalid = errors.New("models: email address is not valid")
 
 	// ErrEmailTaken is returned when a user attempts to register an email address that is taken by another user.
+<<<<<<< HEAD
 	ErrEmailTaken = errors.New("models: email address is already taken")
 
 	// ErrPasswordRequired is returned if the user does not provide a password when signing up.
@@ -53,6 +58,19 @@ var (
 
 	// ErrRememberHashRequired is returned if a remember hash is not present on user create and update.
 	ErrRememberHashRequired = errors.New("model: remember hash is required")
+=======
+	ErrEmailTaken = errors.New("models: Email address is already taken")
+
+	// ErrPasswordRequired is returned if the user does not provide a password when signing up.
+	ErrPasswordRequired = errors.New("models: Password is required")
+)
+
+const (
+	userPwPepper      = "7SZ5t9epC5RFv&*"
+	hmacSecretKey     = "secret-key"
+	minPasswordLength = 6
+	maxPasswordLength = 13
+>>>>>>> 3c88791483ce08eeab66745e3f7f3879e066e0ef
 )
 
 // User represents the use model in our DB.
@@ -218,9 +236,13 @@ func (uv *userValidator) Create(user *User) error {
 		uv.bcryptPassword,
 		uv.passwordHashRequired,
 		uv.setDefaultRemember,
+<<<<<<< HEAD
 		uv.rememberMinBytes,
 		uv.hmacRemember,
 		uv.rememberHashRequired,
+=======
+		uv.hmacRemember,
+>>>>>>> 3c88791483ce08eeab66745e3f7f3879e066e0ef
 	)
 	if err != nil {
 		return err
@@ -246,9 +268,13 @@ func (uv *userValidator) Update(user *User) error {
 		uv.passwordIsComplex(minPasswordLength, maxPasswordLength),
 		uv.bcryptPassword,
 		uv.passwordHashRequired,
+<<<<<<< HEAD
 		uv.rememberMinBytes,
 		uv.hmacRemember,
 		uv.rememberHashRequired,
+=======
+		uv.hmacRemember,
+>>>>>>> 3c88791483ce08eeab66745e3f7f3879e066e0ef
 		uv.emailFormat,
 		uv.normaliseEmail,
 		uv.emailIsAvail)
@@ -403,6 +429,10 @@ func (uv *userValidator) passwordIsComplex(minLength, maxLength int) userValFunc
 			numberPresent      bool
 			specialCharPresent bool
 			passLen            int
+<<<<<<< HEAD
+=======
+			errorString        string
+>>>>>>> 3c88791483ce08eeab66745e3f7f3879e066e0ef
 		)
 
 		if strings.TrimSpace(user.Password) == "" {
@@ -427,8 +457,36 @@ func (uv *userValidator) passwordIsComplex(minLength, maxLength int) userValFunc
 				passLen++
 			}
 		}
+<<<<<<< HEAD
 		if !(numberPresent && uppercasePresent && lowercasePresent && specialCharPresent && passLen >= minLength && passLen <= maxLength) {
 			return ErrPasswordNotComplex
+=======
+		appendError := func(err string) {
+			if len(errorString) != 0 {
+				errorString += ", " + err
+			} else {
+				errorString = "Password requires " + err
+			}
+		}
+		if !lowercasePresent {
+			appendError("a lowercase letter")
+		}
+		if !uppercasePresent {
+			appendError("an uppercase letter")
+		}
+		if !numberPresent {
+			appendError("a number")
+		}
+		if !specialCharPresent {
+			appendError("a symbol")
+		}
+		if !(minLength <= passLen && passLen <= maxLength) {
+			appendError(fmt.Sprintf("length between %d to %d characters long", minLength, maxLength))
+		}
+
+		if len(errorString) != 0 {
+			return fmt.Errorf(errorString)
+>>>>>>> 3c88791483ce08eeab66745e3f7f3879e066e0ef
 		}
 		return nil
 	}
