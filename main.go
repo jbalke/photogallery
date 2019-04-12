@@ -37,7 +37,7 @@ func main() {
 	r.Handle("/contact", staticController.Contact).Methods("GET")
 	r.Handle("/login", usersController.LoginView).Methods("GET")
 	r.HandleFunc("/login", usersController.Login).Methods("POST")
-	r.Handle("/signup", usersController.NewView).Methods("GET")
+	r.HandleFunc("/signup", usersController.New).Methods("GET")
 	r.HandleFunc("/signup", usersController.Create).Methods("POST")
 	r.HandleFunc("/cookietest", usersController.CookieTest).Methods("GET")
 	fmt.Println("Server listening on port", httpPort)
