@@ -53,6 +53,9 @@ var (
 
 	// ErrRememberHashRequired is returned if a remember hash is not present on user create and update.
 	ErrRememberHashRequired = errors.New("model: remember hash is required")
+
+	// ErrNameRequired is returned if a user does not provide a name on user catete and update.
+	ErrNameRequired = errors.New("model: name is required")
 )
 
 // User represents the use model in our DB.
@@ -168,9 +171,8 @@ func newUserValidator(udb UserDB, hmac hash.HMAC) *userValidator {
 
 type userValidator struct {
 	UserDB
-	hmac          hash.HMAC
-	emailRegex    *regexp.Regexp
-	passwordRegex *regexp.Regexp
+	hmac       hash.HMAC
+	emailRegex *regexp.Regexp
 }
 
 // ByEmail will normalise the email address before calling ByEmail on UserDB.
@@ -376,7 +378,7 @@ func (uv *userValidator) emailIsAvail(user *User) error {
 func (uv *userValidator) requireName(user *User) error {
 	user.Name = strings.TrimSpace(user.Name)
 	if user.Name == "" {
-		return errors.New("models: Name is required")
+		return ErrNameRequired
 	}
 	return nil
 }
