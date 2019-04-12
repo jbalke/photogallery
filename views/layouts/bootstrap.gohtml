@@ -17,8 +17,10 @@
   <body>
     {{template "navbar"}}
     <main class="container-fluid">
-      {{template "alert" .}}
-      {{template "yield" .}}
+      {{if .Alert}}
+      {{template "alert" .Alert}}
+      {{ end }}
+      {{template "yield" .Yield}}
     </main>
     {{template "footer"}}
 

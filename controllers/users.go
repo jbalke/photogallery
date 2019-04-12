@@ -40,14 +40,20 @@ func (u Users) New(w http.ResponseWriter, r *http.Request) {
 		Level   string
 		Message string
 	}
-
-	alert := Alert{
+	type Data struct {
+		Alert Alert
+		Yield interface{}
+	}
+	a := Alert{
 		Level:   "success",
 		Message: "Sucessfully rendered alert!",
 	}
+	d := Data{
+		Alert: a,
+		Yield: "hello!",
+	}
 
-	fmt.Printf("data: %+v", alert)
-	if err := u.NewView.Render(w, alert); err != nil {
+	if err := u.NewView.Render(w, d); err != nil {
 		panic(err)
 	}
 }
