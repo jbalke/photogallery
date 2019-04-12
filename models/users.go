@@ -2,8 +2,10 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -17,11 +19,11 @@ var (
 	// ErrNotFound is returned when a resource can not be found in the DB.
 	ErrNotFound = errors.New("models: resource not found")
 
-	// ErrInvalidID is returned when an invalid ID is provided to a method like Delete.
-	ErrInvalidID = errors.New("models: ID provided is invalid")
+	// ErrIDInvalid is returned when an invalid ID is provided to a method like Delete.
+	ErrIDInvalid = errors.New("models: ID provided is invalid")
 
-	// ErrInvalidPassword is returned when the credentials provided to Authenticate() are incorrect.
-	ErrInvalidPassword = errors.New("models: Incorrect Password")
+	// ErrPasswordIncorrect is returned when the credentials provided to Authenticate() are incorrect.
+	ErrPasswordIncorrect = errors.New("models: Incorrect Password")
 
 	// ErrEmailRequired is returned when an email address is not provided for user creation\update.
 	ErrEmailRequired = errors.New("models: Email address is required")
@@ -31,10 +33,17 @@ var (
 
 	// ErrEmailTaken is returned when a user attempts to register an email address that is taken by another user.
 	ErrEmailTaken = errors.New("models: Email address is already taken")
+
+	// ErrPasswordRequired is returned if the user does not provide a password when signing up.
+	ErrPasswordRequired = errors.New("models: Password is required")
 )
 
-const userPwPepper = "7SZ5t9epC5RFv&*"
-const hmacSecretKey = "secret-key"
+const (
+	userPwPepper      = "7SZ5t9epC5RFv&*"
+	hmacSecretKey     = "secret-key"
+	minPasswordLength = 6
+	maxPasswordLength = 13
+)
 
 // User represents the use model in our DB.
 // This is used for use accounts, storing both email
@@ -81,7 +90,7 @@ type UserDB interface {
 // UserService is a set of methods used to work with the user model
 type UserService interface {
 	// Authenticate will verify the provided email and password. If correct, the matching
-	// user will be returned. Otherwise an error will be returned: ErrNotFound, ErrInvalidPassword,
+	// user will be returned. Otherwise an error will be returned: ErrNotFound, ErrPasswordIncorrect,
 	// or another if something goes wrong.
 	Authenticate(email, password string) (*User, error)
 	UserDB
@@ -118,7 +127,7 @@ func (us *userService) Authenticate(email, password string) (*User, error) {
 	if err != nil {
 		switch err {
 		case bcrypt.ErrMismatchedHashAndPassword:
-			return nil, ErrInvalidPassword
+			return nil, ErrPasswordIncorrect
 		default:
 			return nil, err
 		}
@@ -149,8 +158,9 @@ func newUserValidator(udb UserDB, hmac hash.HMAC) *userValidator {
 
 type userValidator struct {
 	UserDB
-	hmac       hash.HMAC
-	emailRegex *regexp.Regexp
+	hmac          hash.HMAC
+	emailRegex    *regexp.Regexp
+	passwordRegex *regexp.Regexp
 }
 
 // ByEmail will normalise the email address before calling ByEmail on UserDB.
@@ -189,14 +199,17 @@ func (uv *userValidator) ByRemember(token string) (*User, error) {
 func (uv *userValidator) Create(user *User) error {
 	err := runUserValFuncs(user,
 		uv.requireName,
-		uv.passwordIsComplex,
-		uv.bcryptPassword,
-		uv.setDefaultRemember,
-		uv.hmacRemember,
 		uv.requireEmail,
+		uv.requirePassword,
 		uv.emailFormat,
 		uv.normaliseEmail,
-		uv.emailIsAvail)
+		uv.emailIsAvail,
+		uv.passwordIsComplex(minPasswordLength, maxPasswordLength),
+		uv.bcryptPassword,
+		uv.passwordHashRequired,
+		uv.setDefaultRemember,
+		uv.hmacRemember,
+	)
 	if err != nil {
 		return err
 	}
@@ -217,10 +230,11 @@ func (uv *userValidator) Delete(id uint) error {
 func (uv *userValidator) Update(user *User) error {
 	err := runUserValFuncs(user,
 		uv.requireName,
-		uv.passwordIsComplex,
-		uv.bcryptPassword,
-		uv.hmacRemember,
 		uv.requireEmail,
+		uv.passwordIsComplex(minPasswordLength, maxPasswordLength),
+		uv.bcryptPassword,
+		uv.passwordHashRequired,
+		uv.hmacRemember,
 		uv.emailFormat,
 		uv.normaliseEmail,
 		uv.emailIsAvail)
@@ -278,7 +292,7 @@ func (uv *userValidator) setDefaultRemember(user *User) error {
 func (uv *userValidator) idGreaterThan(n uint) userValFunc {
 	return userValFunc(func(user *User) error {
 		if user.ID <= n {
-			return ErrInvalidID
+			return ErrIDInvalid
 		}
 		return nil
 	})
@@ -332,14 +346,81 @@ func (uv *userValidator) requireName(user *User) error {
 	return nil
 }
 
-func (uv *userValidator) passwordIsComplex(user *User) error {
-	user.Password = strings.TrimSpace(user.Password)
-
-	if len([]rune(user.Password)) < 6 {
-		return errors.New("models: Password must be 6 characters or greater")
+func (uv *userValidator) requirePassword(user *User) error {
+	if user.Password == "" {
+		return ErrPasswordRequired
 	}
-
 	return nil
+}
+
+func (uv *userValidator) passwordHashRequired(user *User) error {
+	if user.PasswordHash == "" {
+		return ErrPasswordRequired
+	}
+	return nil
+}
+
+func (uv *userValidator) passwordIsComplex(minLength, maxLength int) userValFunc {
+	return func(user *User) error {
+		var (
+			uppercasePresent   bool
+			lowercasePresent   bool
+			numberPresent      bool
+			specialCharPresent bool
+			passLen            int
+			errorString        string
+		)
+
+		if strings.TrimSpace(user.Password) == "" {
+			return nil
+		}
+
+		for _, ch := range user.Password {
+			switch {
+			case unicode.IsNumber(ch):
+				numberPresent = true
+				passLen++
+			case unicode.IsUpper(ch):
+				uppercasePresent = true
+				passLen++
+			case unicode.IsLower(ch):
+				lowercasePresent = true
+				passLen++
+			case unicode.IsPunct(ch) || unicode.IsSymbol(ch):
+				specialCharPresent = true
+				passLen++
+			case ch == ' ':
+				passLen++
+			}
+		}
+		appendError := func(err string) {
+			if len(errorString) != 0 {
+				errorString += ", " + err
+			} else {
+				errorString = "Password requires " + err
+			}
+		}
+		if !lowercasePresent {
+			appendError("a lowercase letter")
+		}
+		if !uppercasePresent {
+			appendError("an uppercase letter")
+		}
+		if !numberPresent {
+			appendError("a number")
+		}
+		if !specialCharPresent {
+			appendError("a symbol")
+		}
+		if !(minLength <= passLen && passLen <= maxLength) {
+			appendError(fmt.Sprintf("length between %d to %d characters long", minLength, maxLength))
+		}
+
+		if len(errorString) != 0 {
+			return fmt.Errorf(errorString)
+		}
+		return nil
+	}
 }
 
 var _ UserDB = &userGorm{}
