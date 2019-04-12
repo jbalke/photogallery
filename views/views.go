@@ -29,7 +29,7 @@ type View struct {
 	Layout   string
 }
 
-func (v View) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (v *View) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := v.Render(w, nil); err != nil {
 		panic(err)
 	}
@@ -37,6 +37,16 @@ func (v View) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (v *View) Render(w http.ResponseWriter, data interface{}) error {
 	w.Header().Set("Content-Type", "text/html")
+	// If a Data type is not passed in, parse data as a Data object.
+	switch data.(type) {
+	case Data:
+		// do nothing
+	default:
+		data = Data{
+			Yield: data,
+		}
+
+	}
 	return v.Template.ExecuteTemplate(w, v.Layout, data)
 }
 
