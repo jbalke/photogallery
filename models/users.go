@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 	"strings"
 	"unicode"
@@ -20,42 +19,6 @@ const (
 	hmacSecretKey     = "secret-key"
 	minPasswordLength = 6
 	maxPasswordLength = 13
-)
-
-var (
-	// ErrNotFound is returned when a resource can not be found in the DB.
-	ErrNotFound = errors.New("models: resource not found")
-
-	// ErrIDInvalid is returned when an invalid ID is provided to a method like Delete.
-	ErrIDInvalid = errors.New("models: ID provided is invalid")
-
-	// ErrPasswordIncorrect is returned when the credentials provided to Authenticate() are incorrect.
-	ErrPasswordIncorrect = errors.New("models: incorrect password")
-
-	// ErrEmailRequired is returned when an email address is not provided for user creation\update.
-	ErrEmailRequired = errors.New("models: email address is required")
-
-	// ErrEmailInvalid is returned when a provided email does not match our expected pattern.
-	ErrEmailInvalid = errors.New("models: email address is not valid")
-
-	// ErrEmailTaken is returned when a user attempts to register an email address that is taken by another user.
-	ErrEmailTaken = errors.New("models: email address is already taken")
-
-	// ErrPasswordRequired is returned if the user does not provide a password when signing up.
-	ErrPasswordRequired = errors.New("models: password is required")
-
-	// ErrPasswordNotComplex is returned if a provided password does not meet complexity requirements.
-	// Passwords must be between 6 and 13 characters long and include lowercase and uppercase characters, as well as a number and symbol.
-	ErrPasswordNotComplex = fmt.Errorf("models: password must be between %d and %d characters long and include a lowercase and uppercase character, a number and a symbol", minPasswordLength, maxPasswordLength)
-
-	// ErrRememberTooShort is returned if a user's remember token is less than 32 bytes.
-	ErrRememberTooShort = errors.New("model: remember token must be at least 32 bytes")
-
-	// ErrRememberHashRequired is returned if a remember hash is not present on user create and update.
-	ErrRememberHashRequired = errors.New("model: remember hash is required")
-
-	// ErrNameRequired is returned if a user does not provide a name on user catete and update.
-	ErrNameRequired = errors.New("model: name is required")
 )
 
 // User represents the use model in our DB.
