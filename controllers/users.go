@@ -87,10 +87,14 @@ type LoginForm struct {
 //
 // POST /login
 func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
+	var vd views.Data
 	var form LoginForm
 
 	if err := ParseForm(r, &form); err != nil {
-		panic(err)
+		log.Println(err)
+		vd.SetAlert(err)
+		u.LoginView.Render(w, vd)
+		return
 	}
 
 	user, err := u.us.Authenticate(form.Email, form.Password)
@@ -98,23 +102,21 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		case models.ErrNotFound:
-			fmt.Fprintln(w, "Invalid email address.")
-			return
-		case models.ErrPasswordIncorrect:
-			fmt.Fprintln(w, "Invalid password provided.")
-			return
+			vd.AlertError("Invalid email address")
 		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			vd.SetAlert(err)
 		}
+		u.LoginView.Render(w, vd)
+		return
 	}
 
 	err = u.signIn(w, user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println(err)
+		vd.SetAlert(err)
+		u.LoginView.Render(w, vd)
 		return
 	}
-	//fmt.Fprint(w, user)
 	http.Redirect(w, r, "/cookietest", http.StatusFound)
 }
 
