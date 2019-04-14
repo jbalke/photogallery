@@ -54,13 +54,6 @@ type UserDB interface {
 	Update(user *User) error
 	UpdateRememberHash(user *User) error
 	Delete(id uint) error
-
-	// Used to close the DB connection
-	Close() error
-
-	// Migration helpers
-	AutoMigrate() error
-	DestructiveReset() error
 }
 
 // UserService is a set of methods used to work with the user model
@@ -398,17 +391,6 @@ func (uv *userValidator) passwordIsComplex(minLength, maxLength int) userValFunc
 
 var _ UserDB = &userGorm{}
 
-// func newUserGorm(connectionInfo string, logging bool) (*userGorm, error) {
-// 	db, err := gorm.Open("postgres", connectionInfo)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	db.LogMode(logging)
-// 	return &userGorm{
-// 		db: db,
-// 	}, nil
-// }
-
 type userGorm struct {
 	db *gorm.DB
 }
@@ -465,24 +447,6 @@ func (ug *userGorm) UpdateRememberHash(user *User) error {
 func (ug *userGorm) Delete(id uint) error {
 	user := User{Model: gorm.Model{ID: id}}
 	return ug.db.Delete(&user).Error
-}
-
-// Close closes the UserService database connection.
-func (ug *userGorm) Close() error {
-	return ug.db.Close()
-}
-
-// DestructiveReset drops the user table and rebuilds it.
-func (ug *userGorm) DestructiveReset() error {
-	if err := ug.db.DropTableIfExists(&User{}).Error; err != nil {
-		return err
-	}
-	return ug.AutoMigrate()
-}
-
-// AutoMigrate will attempt to automatically migrate the users table.
-func (ug *userGorm) AutoMigrate() error {
-	return ug.db.AutoMigrate(&User{}).Error
 }
 
 // first will query using the provided gorm.DB and will
