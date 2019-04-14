@@ -74,17 +74,14 @@ type UserService interface {
 
 // NewUserService takes a connection string for the DB and returns a *UserService.
 // If the returned error is not nil, there was a problem opening the database.
-func NewUserService(connectionInfo string, logging bool) (UserService, error) {
-	ug, err := newUserGorm(connectionInfo, logging)
-	if err != nil {
-		return nil, err
-	}
+func NewUserService(db *gorm.DB) UserService {
+	ug := &userGorm{db}
 	hmac := hash.NewHMAC(hmacSecretKey)
 	uv := newUserValidator(ug, hmac)
 
 	return &userService{
 		UserDB: uv,
-	}, nil
+	}
 }
 
 var _ UserService = &userService{}
@@ -401,16 +398,16 @@ func (uv *userValidator) passwordIsComplex(minLength, maxLength int) userValFunc
 
 var _ UserDB = &userGorm{}
 
-func newUserGorm(connectionInfo string, logging bool) (*userGorm, error) {
-	db, err := gorm.Open("postgres", connectionInfo)
-	if err != nil {
-		return nil, err
-	}
-	db.LogMode(logging)
-	return &userGorm{
-		db: db,
-	}, nil
-}
+// func newUserGorm(connectionInfo string, logging bool) (*userGorm, error) {
+// 	db, err := gorm.Open("postgres", connectionInfo)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	db.LogMode(logging)
+// 	return &userGorm{
+// 		db: db,
+// 	}, nil
+// }
 
 type userGorm struct {
 	db *gorm.DB
