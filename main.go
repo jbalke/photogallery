@@ -30,6 +30,7 @@ func main() {
 
 	staticController := controllers.NewStatic()
 	usersController := controllers.NewUsers(services.User)
+	galleriesController := controllers.NewGalleries(services.Gallery)
 
 	r := mux.NewRouter()
 	r.Handle("/", staticController.Home).Methods("GET")
@@ -39,6 +40,9 @@ func main() {
 	r.HandleFunc("/signup", usersController.New).Methods("GET")
 	r.HandleFunc("/signup", usersController.Create).Methods("POST")
 	r.HandleFunc("/cookietest", usersController.CookieTest).Methods("GET")
+
+	// Galleries routes
+	r.Handle("/galleries/new", galleriesController.New)
 	fmt.Println("Server listening on port", httpPort)
 	http.ListenAndServe(httpPort, r)
 }
