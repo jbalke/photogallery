@@ -17,6 +17,22 @@ type GalleryDB interface {
 	Create(gallery *Gallery) error
 }
 
+func NewGalleryService(db *gorm.DB) GalleryService {
+	return &galleryService{
+		GalleryDB: &galleryVallidator{&galleryGorm{db}},
+	}
+}
+
+type galleryService struct {
+	GalleryDB
+}
+
+type galleryVallidator struct {
+	GalleryDB
+}
+
+var _ GalleryDB = &galleryGorm{}
+
 type galleryGorm struct {
 	db *gorm.DB
 }
