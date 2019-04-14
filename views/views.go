@@ -1,7 +1,9 @@
 package views
 
 import (
+	"bytes"
 	"html/template"
+	"io"
 	"net/http"
 	"path/filepath"
 )
@@ -30,12 +32,10 @@ type View struct {
 }
 
 func (v *View) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if err := v.Render(w, nil); err != nil {
-		panic(err)
-	}
+	v.Render(w, nil)
 }
 
-func (v *View) Render(w http.ResponseWriter, data interface{}) error {
+func (v *View) Render(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "text/html")
 	// If a Data type is not passed in, parse data as a Data object.
 	switch data.(type) {
@@ -45,9 +45,14 @@ func (v *View) Render(w http.ResponseWriter, data interface{}) error {
 		data = Data{
 			Yield: data,
 		}
-
 	}
-	return v.Template.ExecuteTemplate(w, v.Layout, data)
+
+	var buf bytes.Buffer
+	if err := v.Template.ExecuteTemplate(&buf, v.Layout, data); err != nil {
+		http.Error(w, "Something went wrong. If the problem persists, please email support@lenslocked.com", http.StatusInternalServerError)
+		return
+	}
+	io.Copy(w, &buf)
 }
 
 // layoutFiles returns a slice of strings representing the layout files used in this application.
