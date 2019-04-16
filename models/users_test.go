@@ -6,38 +6,41 @@ import (
 	"time"
 )
 
-func testingUserService() (UserService, error) {
+func testingUserService() (*Services, error) {
 	const (
-		host   = "localhost"
-		port   = 5432
-		user   = "postgres"
-		dbname = "lenslocked_test"
+		host     = "localhost"
+		port     = 5432
+		user     = "postgres"
+		password = "sParhwk72"
+		dbname   = "lenslocked_test"
 	)
 
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", host, port, user, dbname)
-	us, err := NewUserService(psqlInfo, false)
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+	services, err := NewServices(psqlInfo, true)
 	if err != nil {
 		return nil, err
 	}
-
 	// Clear users table between tests
-	us.DestructiveReset()
+	services.DestructiveReset()
 
-	return us, nil
+	return services, nil
 }
 
 func TestCreateUser(t *testing.T) {
-	us, err := testingUserService()
+	services, err := testingUserService()
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	defer services.db.Close()
+
 	user := User{
-		Name:  "Ted",
-		Email: "ted@home.net",
+		Name:     "Ted",
+		Email:    "ted@home.net",
+		Password: "Pas5word!",
 	}
 
-	err = us.Create(&user)
+	err = services.User.Create(&user)
 	if err != nil {
 		t.Fatal(err)
 	}
