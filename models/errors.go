@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"strings"
 	"unicode"
 )
@@ -9,9 +8,6 @@ import (
 const (
 	// ErrNotFound is returned when a resource can not be found in the DB.
 	ErrNotFound modelError = "models: resource not found"
-
-	// ErrIDInvalid is returned when an invalid ID is provided to a method like Delete.
-	ErrIDInvalid modelError = "models: ID provided is invalid"
 
 	// ErrPasswordIncorrect is returned when the credentials provided to Authenticate() are incorrect.
 	ErrPasswordIncorrect modelError = "models: incorrect password"
@@ -28,19 +24,22 @@ const (
 	// ErrPasswordRequired is returned if the user does not provide a password when signing up.
 	ErrPasswordRequired modelError = "models: password is required"
 
+	// ErrNameRequired is returned if a user does not provide a name on user create and update.
+	ErrNameRequired modelError = "models: name is required"
+
+	// ErrPasswordNotComplex is returned if a provided password does not meet complexity requirements.
+	// Passwords must be between 6 and 13 characters long and include lowercase and uppercase characters, as well as a number and symbol.
+	ErrPasswordNotComplex modelError = "models: password must be between 6 and 13 characters long and include a lowercase and uppercase character, a number and a symbol"
+
 	// ErrRememberTooShort is returned if a user's remember token is less than 32 bytes.
-	ErrRememberTooShort modelError = "models: remember token must be at least 32 bytes"
+	ErrRememberTooShort privateError = "models: remember token must be at least 32 bytes"
 
 	// ErrRememberHashRequired is returned if a remember hash is not present on user create and update.
-	ErrRememberHashRequired modelError = "models: remember hash is required"
+	ErrRememberHashRequired privateError = "models: remember hash is required"
 
-	// ErrNameRequired is returned if a user does not provide a name on user catete and update.
-	ErrNameRequired modelError = "models: name is required"
+	// ErrIDInvalid is returned when an invalid ID is provided to a method like Delete.
+	ErrIDInvalid privateError = "models: ID provided is invalid"
 )
-
-// ErrPasswordNotComplex is returned if a provided password does not meet complexity requirements.
-// Passwords must be between 6 and 13 characters long and include lowercase and uppercase characters, as well as a number and symbol.
-var ErrPasswordNotComplex = modelError(fmt.Sprint("models: password must be between %d and %d characters long and include a lowercase and uppercase character, a number and a symbol", minPasswordLength, maxPasswordLength))
 
 type modelError string
 
@@ -54,4 +53,10 @@ func (e modelError) Public() string {
 	a := []rune(s)
 	a[0] = unicode.ToUpper(a[0])
 	return string(a)
+}
+
+type privateError string
+
+func (e privateError) Error() string {
+	return string(e)
 }
