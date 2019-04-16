@@ -31,6 +31,9 @@ const (
 	// Passwords must be between 6 and 13 characters long and include lowercase and uppercase characters, as well as a number and symbol.
 	ErrPasswordNotComplex modelError = "models: password must be between 6 and 13 characters long and include a lowercase and uppercase character, a number and a symbol"
 
+	// ErrTitleRequired is returned when a user attempts to create a gallery without a title.
+	ErrTitleRequired modelError = "models: title is required"
+
 	// ErrRememberTooShort is returned if a user's remember token is less than 32 bytes.
 	ErrRememberTooShort privateError = "models: remember token must be at least 32 bytes"
 
@@ -39,6 +42,8 @@ const (
 
 	// ErrIDInvalid is returned when an invalid ID is provided to a method like Delete.
 	ErrIDInvalid privateError = "models: ID provided is invalid"
+
+	ErrUserIDRequired privateError = "models: user ID is required"
 )
 
 type modelError string
