@@ -42,7 +42,8 @@ func main() {
 	r.HandleFunc("/cookietest", usersController.CookieTest).Methods("GET")
 
 	// Galleries routes
-	r.Handle("/galleries/new", galleriesController.New)
+	r.Handle("/galleries/new", galleriesController.New).Methods("GET")
+	r.HandleFunc("/galleries", galleriesController.Create).Methods("POST")
 	fmt.Println("Server listening on port", httpPort)
 	http.ListenAndServe(httpPort, r)
 }
