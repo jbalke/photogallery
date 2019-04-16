@@ -14,13 +14,13 @@ const (
 	host     = "localhost"
 	port     = 5432
 	user     = "postgres"
-	password = ""
+	password = "sParhwk72"
 	dbname   = "lenslocked_dev"
 	httpPort = ":3000"
 )
 
 func main() {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", host, port, user, dbname)
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 	services, err := models.NewServices(psqlInfo, true)
 	must(err)
 	defer services.Close()
