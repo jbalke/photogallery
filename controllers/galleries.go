@@ -71,6 +71,29 @@ func (g *Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 	g.EditView.Render(w, vd)
 }
 
+// POST /galleries/:id/delete
+func (g *Galleries) Delete(w http.ResponseWriter, r *http.Request) {
+	gallery, err := g.galleryByID(w, r)
+	if err != nil {
+		return
+	}
+	user := context.User(r.Context())
+	if user.ID != gallery.UserID {
+		http.Error(w, "Gallery not found", http.StatusNotFound)
+		return
+	}
+	var vd views.Data
+	err = g.gs.Delete(gallery.ID)
+	if err != nil {
+		vd.SetAlert(err)
+		vd.Yield = gallery
+		g.EditView.Render(w, vd)
+		return
+	}
+	// TODO: redirect to index page
+	fmt.Fprintln(w, "sucessfully deleted!")
+}
+
 // POST /galleries/:id/update
 func (g *Galleries) Update(w http.ResponseWriter, r *http.Request) {
 	gallery, err := g.galleryByID(w, r)
@@ -93,7 +116,18 @@ func (g *Galleries) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	gallery.Title = form.Title
-	fmt.Fprintln(w, gallery)
+	//fmt.Fprintln(w, gallery)
+	err = g.gs.Update(gallery)
+	if err != nil {
+		vd.SetAlert(err)
+		g.EditView.Render(w, vd)
+		return
+	}
+	vd.Alert = &views.Alert{
+		Level:   views.AlertLvlSuccess,
+		Message: "Gallery successfully updated!",
+	}
+	g.EditView.Render(w, vd)
 }
 
 func (g *Galleries) galleryByID(w http.ResponseWriter, r *http.Request) (*models.Gallery, error) {

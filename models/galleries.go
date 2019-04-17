@@ -20,6 +20,8 @@ type GalleryService interface {
 type GalleryDB interface {
 	ByID(id uint) (*Gallery, error)
 	Create(gallery *Gallery) error
+	Delete(id uint) error
+	Update(gallery *Gallery) error
 }
 
 func NewGalleryService(db *gorm.DB) GalleryService {
@@ -47,6 +49,27 @@ func (gv *galleryValidator) Create(gallery *Gallery) error {
 
 }
 
+func (gv *galleryValidator) Delete(id uint) error {
+	var gallery Gallery
+	gallery.ID = id
+	err := runGalleryValFuncs(&gallery, gv.idGreaterThan(0))
+	if err != nil {
+		return err
+	}
+	return gv.GalleryDB.Delete(id)
+}
+
+func (gv *galleryValidator) Update(gallery *Gallery) error {
+	err := runGalleryValFuncs(gallery,
+		gv.titleRequired,
+		gv.userIDRequired)
+	if err != nil {
+		return err
+	}
+	return gv.GalleryDB.Update(gallery)
+
+}
+
 func (gv *galleryValidator) titleRequired(gallery *Gallery) error {
 	if strings.TrimSpace(gallery.Title) == "" {
 		return ErrTitleRequired
@@ -61,6 +84,15 @@ func (gv *galleryValidator) userIDRequired(gallery *Gallery) error {
 	return nil
 }
 
+func (gv *galleryValidator) idGreaterThan(n uint) galleryValFunc {
+	return galleryValFunc(func(gallery *Gallery) error {
+		if gallery.ID <= n {
+			return ErrIDInvalid
+		}
+		return nil
+	})
+}
+
 var _ GalleryDB = &galleryGorm{}
 
 type galleryGorm struct {
@@ -69,6 +101,15 @@ type galleryGorm struct {
 
 func (gg *galleryGorm) Create(gallery *Gallery) error {
 	return gg.db.Create(gallery).Error
+}
+
+func (gg *galleryGorm) Delete(id uint) error {
+	gallery := Gallery{Model: gorm.Model{ID: id}}
+	return gg.db.Delete(&gallery).Error
+}
+
+func (gg *galleryGorm) Update(gallery *Gallery) error {
+	return gg.db.Save(gallery).Error
 }
 
 func (gg *galleryGorm) ByID(id uint) (*Gallery, error) {
