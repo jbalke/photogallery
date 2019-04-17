@@ -30,11 +30,11 @@ func main() {
 	// must(services.DestructiveReset())
 	services.AutoMigrate()
 
+	r := mux.NewRouter()
 	staticController := controllers.NewStatic()
 	usersController := controllers.NewUsers(services.User)
-	galleriesController := controllers.NewGalleries(services.Gallery)
+	galleriesController := controllers.NewGalleries(services.Gallery, r)
 
-	r := mux.NewRouter()
 	r.Handle("/", staticController.Home).Methods("GET")
 	r.Handle("/contact", staticController.Contact).Methods("GET")
 	r.Handle("/login", usersController.LoginView).Methods("GET")
@@ -50,6 +50,7 @@ func main() {
 
 	r.Handle("/galleries/new", requireUserMw.Apply(galleriesController.New)).Methods("GET")
 	r.HandleFunc("/galleries", requireUserMw.ApplyFN(galleriesController.Create)).Methods("POST")
+	r.HandleFunc("/galleries/{id:[0-9]+}", galleriesController.Show).Methods("GET").Name(controllers.ShowGallery)
 	fmt.Println("Server listening on port", httpPort)
 	log.Fatal(http.ListenAndServe(httpPort, r))
 }

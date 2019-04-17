@@ -30,7 +30,6 @@ func (mw *RequireUser) ApplyFN(next http.HandlerFunc) http.HandlerFunc {
 		ctx := r.Context()
 		ctx = context.WithUser(ctx, user)
 		r = r.WithContext(ctx)
-		//fmt.Println("user: ", user)
 		next(w, r)
 	})
 }
