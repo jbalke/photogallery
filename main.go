@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"lenslocked.com/controllers"
@@ -50,7 +51,7 @@ func main() {
 	r.Handle("/galleries/new", requireUserMw.Apply(galleriesController.New)).Methods("GET")
 	r.HandleFunc("/galleries", requireUserMw.ApplyFN(galleriesController.Create)).Methods("POST")
 	fmt.Println("Server listening on port", httpPort)
-	http.ListenAndServe(httpPort, r)
+	log.Fatal(http.ListenAndServe(httpPort, r))
 }
 
 func must(err error) {

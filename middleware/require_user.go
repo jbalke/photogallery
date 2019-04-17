@@ -1,9 +1,9 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 
+	"lenslocked.com/context"
 	"lenslocked.com/models"
 )
 
@@ -27,7 +27,10 @@ func (mw *RequireUser) ApplyFN(next http.HandlerFunc) http.HandlerFunc {
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
-		fmt.Println("user: ", user)
+		ctx := r.Context()
+		ctx = context.WithUser(ctx, user)
+		r = r.WithContext(ctx)
+		//fmt.Println("user: ", user)
 		next(w, r)
 	})
 }
