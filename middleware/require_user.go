@@ -19,6 +19,8 @@ func (mw *RequireUser) ApplyFN(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("remember_token")
 		if err != nil {
+			// TODO: Remember original destination so we can redirect user to where they want to be
+			// after after login
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}

@@ -21,6 +21,8 @@ const (
 	httpPort = ":3000"
 )
 
+// TODO: Use Gorilla Session to make use of Flash messages and sessions
+// OR: https://www.alexedwards.net/blog/simple-flash-messages-in-golang
 func main() {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 	services, err := models.NewServices(psqlInfo, true)
@@ -48,9 +50,10 @@ func main() {
 		UserService: services.User,
 	}
 
+	r.HandleFunc("/galleries", requireUserMw.ApplyFN(galleriesController.Index)).Methods("GET")
 	r.Handle("/galleries/new", requireUserMw.Apply(galleriesController.New)).Methods("GET")
 	r.HandleFunc("/galleries", requireUserMw.ApplyFN(galleriesController.Create)).Methods("POST")
-	r.HandleFunc("/galleries/{id:[0-9]+}/edit", requireUserMw.ApplyFN(galleriesController.Edit)).Methods("GET")
+	r.HandleFunc("/galleries/{id:[0-9]+}/edit", requireUserMw.ApplyFN(galleriesController.Edit)).Methods("GET").Name(controllers.EditGallery)
 	r.HandleFunc("/galleries/{id:[0-9]+}/update", requireUserMw.ApplyFN(galleriesController.Update)).Methods("POST")
 	r.HandleFunc("/galleries/{id:[0-9]+}/delete", requireUserMw.ApplyFN(galleriesController.Delete)).Methods("POST")
 	r.HandleFunc("/galleries/{id:[0-9]+}", galleriesController.Show).Methods("GET").Name(controllers.ShowGallery)

@@ -1,0 +1,29 @@
+{{define "yield"}}
+<div class="row">
+  <div class=" col-md-12">
+    {{if .}}
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Title</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .}}
+        <tr>
+          <th scope="row">{{.ID}}</th>
+          <td><a href="/galleries/{{.ID}}">{{.Title}}</a></td>
+          <td><a href="/galleries/{{.ID}}/edit">Edit</a></td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{else}}
+      <h3>No galleries</h3>
+    {{end}}
+    <a href="/galleries/new" class="btn btn-primary float-right">New Gallery</a>
+  </div>
+</div>
+{{end}}

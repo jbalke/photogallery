@@ -13,6 +13,7 @@ import (
 
 const (
 	ShowGallery = "show_gallery"
+	EditGallery = "edit_gallery"
 )
 
 // NewGalleries is used to create a new Galleries controller.
@@ -20,24 +21,40 @@ const (
 // correctly so should only be used during initial setup.
 func NewGalleries(gs models.GalleryService, r *mux.Router) *Galleries {
 	return &Galleries{
-		New:      views.NewView("bootstrap", "galleries/new"),
-		ShowView: views.NewView("bootstrap", "galleries/show"),
-		EditView: views.NewView("bootstrap", "galleries/edit"),
-		gs:       gs,
-		r:        r,
+		New:       views.NewView("bootstrap", "galleries/new"),
+		ShowView:  views.NewView("bootstrap", "galleries/show"),
+		EditView:  views.NewView("bootstrap", "galleries/edit"),
+		IndexView: views.NewView("bootstrap", "galleries/index"),
+		gs:        gs,
+		r:         r,
 	}
 }
 
 type Galleries struct {
-	New      *views.View
-	ShowView *views.View
-	EditView *views.View
-	gs       models.GalleryService
-	r        *mux.Router
+	New       *views.View
+	ShowView  *views.View
+	EditView  *views.View
+	IndexView *views.View
+	gs        models.GalleryService
+	r         *mux.Router
 }
 
 type GalleryForm struct {
 	Title string `schema:"title"`
+}
+
+// GET /galleries
+func (g *Galleries) Index(w http.ResponseWriter, r *http.Request) {
+	user := context.User(r.Context())
+	galleries, err := g.gs.ByUserID(user.ID)
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+	var vd views.Data
+	vd.Yield = galleries
+	// fmt.Fprint(w, galleries)
+	g.IndexView.Render(w, vd)
 }
 
 // GET /galleries/:id
@@ -90,8 +107,7 @@ func (g *Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 		g.EditView.Render(w, vd)
 		return
 	}
-	// TODO: redirect to index page
-	fmt.Fprintln(w, "sucessfully deleted!")
+	http.Redirect(w, r, "/galleries", http.StatusFound)
 }
 
 // POST /galleries/:id/update
@@ -181,11 +197,10 @@ func (g *Galleries) Create(w http.ResponseWriter, r *http.Request) {
 		g.New.Render(w, vd)
 		return
 	}
-	url, err := g.r.Get(ShowGallery).URL("id", fmt.Sprintf("%v", gallery.ID))
+	url, err := g.r.Get(EditGallery).URL("id", fmt.Sprintf("%v", gallery.ID))
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
 	http.Redirect(w, r, url.Path, http.StatusFound)
-
 }
