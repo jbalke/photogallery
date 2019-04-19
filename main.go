@@ -37,6 +37,10 @@ func main() {
 	usersController := controllers.NewUsers(services.User)
 	galleriesController := controllers.NewGalleries(services.Gallery, r)
 
+	userMw := middleware.User{
+		UserService: services.User,
+	}
+
 	r.Handle("/", staticController.Home).Methods("GET")
 	r.Handle("/contact", staticController.Contact).Methods("GET")
 	r.Handle("/login", usersController.LoginView).Methods("GET")
@@ -47,7 +51,7 @@ func main() {
 
 	// Galleries middleware & routes
 	requireUserMw := middleware.RequireUser{
-		UserService: services.User,
+		User: userMw,
 	}
 
 	r.HandleFunc("/galleries", requireUserMw.ApplyFN(galleriesController.Index)).Methods("GET")
@@ -58,7 +62,7 @@ func main() {
 	r.HandleFunc("/galleries/{id:[0-9]+}/delete", requireUserMw.ApplyFN(galleriesController.Delete)).Methods("POST")
 	r.HandleFunc("/galleries/{id:[0-9]+}", galleriesController.Show).Methods("GET").Name(controllers.ShowGallery)
 	fmt.Println("Server listening on port", httpPort)
-	log.Fatal(http.ListenAndServe(httpPort, r))
+	log.Fatal(http.ListenAndServe(httpPort, userMw.Apply(r)))
 }
 
 func must(err error) {

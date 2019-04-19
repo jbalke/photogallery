@@ -1,6 +1,10 @@
 package views
 
-import "log"
+import (
+	"log"
+
+	"lenslocked.com/models"
+)
 
 const (
 	AlertLvlError   = "danger"
@@ -21,6 +25,7 @@ type Alert struct {
 // Data is the data structure that views expect template data to be passed in
 type Data struct {
 	Alert *Alert
+	User  *models.User
 	Yield interface{}
 }
 

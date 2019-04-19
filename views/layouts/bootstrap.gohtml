@@ -15,7 +15,7 @@
     />
   </head>
   <body>
-    {{template "navbar"}}
+    {{template "navbar" .}}
     <main class="container-fluid">
       {{if .Alert}}
       {{template "alert" .Alert}}
