@@ -1,33 +1,76 @@
 {{define "yield"}}
 <div class="row">
-  <div class=" col-md-6 offset-md-3">
-    <div class="card border-primary">
-      <h5 class="card-header bg-primary text-white">Edit your gallery</h5>
-      <div class="card-body">
-        {{template "editGalleryForm" .}}
-      </div>
-    </div>
+  <div class="col-md-10 offset-md-1">
+    <h2>Edit your gallery</h2>
+    <hr>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    {{template "editGalleryForm" .}}
+  </div>
+</div>
+<div class="row align-items-center">
+  <label for="" class="col-md-1 col-form-label text-right font-weight-bold">Images</label>
+  <div class="col-md-10">
+    {{template "galleryImages" .}}
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    {{template "uploadImageForm" .}}
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12 d-flex justify-content-end">
+    {{template "deleteGalleryForm" .}}
   </div>
 </div>
 {{ end }}
 
 {{define "editGalleryForm"}}
 <form action="/galleries/{{.ID}}/update" method="POST">
-  <div class="form-group">
-    <label for="title" class="font-weight-bold">Title</label>
-    <input
-      name="title"
-      type="text"
-      class="form-control"
-      id="title"
-      placeholder="Gallery title"
-      value="{{.Title}}"
-    />
+  <div class="form-group row align-items-center">
+    <label for="title" class="col-md-1 col-form-label text-right font-weight-bold">Title</label>
+    <div class="col-md-10">
+      <input
+        name="title"
+        type="text"
+        class="form-control"
+        id="title"
+        placeholder="Gallery title"
+        value="{{.Title}}"
+      />
+    </div>
+    <div class="col-md-1">
+      <button type="submit" class="btn btn-outline-secondary btn-sm">Save</button>
+    </div>
   </div>
-  <button type="submit" class="btn btn-primary">Update</button>
 </form>
+{{end}}
+
+{{define "deleteGalleryForm"}}
 <form action="/galleries/{{.ID}}/delete" method="POST">
   <button type="submit" class="btn btn-danger">Delete</button>
 </form>
-
 {{ end }}
+
+{{define "uploadImageForm"}}
+<form action="/galleries/{{.ID}}/images" method="POST" enctype="multipart/form-data">
+  <div class="form-group row">
+    <label for="images" class="col-md-1 col-form-label text-right font-weight-bold">Add Images</label>
+    <div class="col-md-10">
+      <input type="file" class="form-control-file" id="images" name="images" multiple="multiple">
+      <p class="form-text text-secondary">Please ensure all images are either jpg, jpeg or png.</p>
+      <button type="submit" class="btn btn-outline-secondary">Upload</button>
+      <hr>
+    </div>
+  </div>
+</form>
+{{end}}
+
+{{define "galleryImages"}}
+<div>
+  <p>Coming soon...</p>
+</div>
+{{end}}
