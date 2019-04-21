@@ -269,28 +269,4 @@ func (g *Galleries) ImageUpload(w http.ResponseWriter, r *http.Request) {
 		}
 		fmt.Fprintf(w, "File successfully uploaded (%d bytes)\n", bytes)
 	}
-
-	// var vd views.Data
-	// vd.Yield = gallery
-
-	// var form GalleryForm
-	// if err := ParseForm(r, &form); err != nil {
-	// 	vd.SetAlert(err)
-	// 	g.EditView.Render(w, r, vd)
-	// 	return
-	// }
-
-	// gallery.Title = form.Title
-	// //fmt.Fprintln(w, gallery)
-	// err = g.gs.Update(gallery)
-	// if err != nil {
-	// 	vd.SetAlert(err)
-	// 	g.EditView.Render(w, r, vd)
-	// 	return
-	// }
-	// vd.Alert = &views.Alert{
-	// 	Level:   views.AlertLvlSuccess,
-	// 	Message: "Gallery successfully updated!",
-	// }
-	// g.EditView.Render(w, r, vd)
 }
