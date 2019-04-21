@@ -2,7 +2,9 @@ package controllers
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -14,6 +16,8 @@ import (
 const (
 	ShowGallery = "show_gallery"
 	EditGallery = "edit_gallery"
+
+	maxMultipartMem = 1 << 20 // 1 MB
 )
 
 // NewGalleries is used to create a new Galleries controller.
@@ -146,28 +150,6 @@ func (g *Galleries) Update(w http.ResponseWriter, r *http.Request) {
 	g.EditView.Render(w, r, vd)
 }
 
-func (g *Galleries) galleryByID(w http.ResponseWriter, r *http.Request) (*models.Gallery, error) {
-	vars := mux.Vars(r)
-	idStr := vars["id"]
-
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid gallery ID", http.StatusNotFound)
-		return nil, err
-	}
-	gallery, err := g.gs.ByID(uint(id))
-	if err != nil {
-		switch err {
-		case models.ErrNotFound:
-			http.Error(w, "Gallery not found", http.StatusNotFound)
-		default:
-			http.Error(w, "Opps! Something went wrong.", http.StatusInternalServerError)
-		}
-		return nil, err
-	}
-	return gallery, nil
-}
-
 // Create is used to process the signup form. This creates a new user account.
 //
 // POST /signup
@@ -203,4 +185,112 @@ func (g *Galleries) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, url.Path, http.StatusFound)
+}
+
+func (g *Galleries) galleryByID(w http.ResponseWriter, r *http.Request) (*models.Gallery, error) {
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid gallery ID", http.StatusNotFound)
+		return nil, err
+	}
+	gallery, err := g.gs.ByID(uint(id))
+	if err != nil {
+		switch err {
+		case models.ErrNotFound:
+			http.Error(w, "Gallery not found", http.StatusNotFound)
+		default:
+			http.Error(w, "Opps! Something went wrong.", http.StatusInternalServerError)
+		}
+		return nil, err
+	}
+	return gallery, nil
+}
+
+// POST /galleries/:id/images
+func (g *Galleries) ImageUpload(w http.ResponseWriter, r *http.Request) {
+	gallery, err := g.galleryByID(w, r)
+	if err != nil {
+		return
+	}
+	user := context.User(r.Context())
+	if user.ID != gallery.UserID {
+		http.Error(w, "Gallery not found", http.StatusNotFound)
+		return
+	}
+	// TODO: parse a multipart form
+	var vd views.Data
+	vd.Yield = gallery
+	err = r.ParseMultipartForm(maxMultipartMem)
+	if err != nil {
+		vd.SetAlert(err)
+		g.EditView.Render(w, r, vd)
+		return
+	}
+
+	// create directory to store images
+	galleryPath := fmt.Sprintf("images/galleries/%v/", gallery.ID)
+	err = os.MkdirAll(galleryPath, 0755)
+	if err != nil {
+		vd.SetAlert(err)
+		g.EditView.Render(w, r, vd)
+		return
+	}
+
+	// images is the name of the form input where the image files are selected
+	files := r.MultipartForm.File["images"]
+	for _, f := range files {
+		// open uploaded files
+		file, err := f.Open()
+		if err != nil {
+			vd.SetAlert(err)
+			g.EditView.Render(w, r, vd)
+			return
+		}
+		defer file.Close()
+
+		// create destination file
+		dst, err := os.Create(galleryPath + f.Filename)
+		if err != nil {
+			vd.SetAlert(err)
+			g.EditView.Render(w, r, vd)
+			return
+		}
+		defer dst.Close()
+
+		// copy file to destination
+		bytes, err := io.Copy(dst, file)
+		if err != nil {
+			vd.SetAlert(err)
+			g.EditView.Render(w, r, vd)
+			return
+		}
+		fmt.Fprintf(w, "File successfully uploaded (%d bytes)\n", bytes)
+	}
+
+	// var vd views.Data
+	// vd.Yield = gallery
+
+	// var form GalleryForm
+	// if err := ParseForm(r, &form); err != nil {
+	// 	vd.SetAlert(err)
+	// 	g.EditView.Render(w, r, vd)
+	// 	return
+	// }
+
+	// gallery.Title = form.Title
+	// //fmt.Fprintln(w, gallery)
+	// err = g.gs.Update(gallery)
+	// if err != nil {
+	// 	vd.SetAlert(err)
+	// 	g.EditView.Render(w, r, vd)
+	// 	return
+	// }
+	// vd.Alert = &views.Alert{
+	// 	Level:   views.AlertLvlSuccess,
+	// 	Message: "Gallery successfully updated!",
+	// }
+	// g.EditView.Render(w, r, vd)
 }
