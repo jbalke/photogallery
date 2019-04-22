@@ -2,9 +2,7 @@ package controllers
 
 import (
 	"fmt"
-	"io"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -23,13 +21,14 @@ const (
 // NewGalleries is used to create a new Galleries controller.
 // This function will panic if the templates are not parsed
 // correctly so should only be used during initial setup.
-func NewGalleries(gs models.GalleryService, r *mux.Router) *Galleries {
+func NewGalleries(gs models.GalleryService, is models.ImageService, r *mux.Router) *Galleries {
 	return &Galleries{
 		New:       views.NewView("bootstrap", "galleries/new"),
 		ShowView:  views.NewView("bootstrap", "galleries/show"),
 		EditView:  views.NewView("bootstrap", "galleries/edit"),
 		IndexView: views.NewView("bootstrap", "galleries/index"),
 		gs:        gs,
+		is:        is,
 		r:         r,
 	}
 }
@@ -40,6 +39,7 @@ type Galleries struct {
 	EditView  *views.View
 	IndexView *views.View
 	gs        models.GalleryService
+	is        models.ImageService
 	r         *mux.Router
 }
 
@@ -230,15 +230,6 @@ func (g *Galleries) ImageUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// create directory to store images
-	galleryPath := fmt.Sprintf("images/galleries/%v/", gallery.ID)
-	err = os.MkdirAll(galleryPath, 0755)
-	if err != nil {
-		vd.SetAlert(err)
-		g.EditView.Render(w, r, vd)
-		return
-	}
-
 	// images is the name of the form input where the image files are selected
 	files := r.MultipartForm.File["images"]
 	for _, f := range files {
@@ -251,17 +242,7 @@ func (g *Galleries) ImageUpload(w http.ResponseWriter, r *http.Request) {
 		}
 		defer file.Close()
 
-		// create destination file
-		dst, err := os.Create(galleryPath + f.Filename)
-		if err != nil {
-			vd.SetAlert(err)
-			g.EditView.Render(w, r, vd)
-			return
-		}
-		defer dst.Close()
-
-		// copy file to destination
-		bytes, err := io.Copy(dst, file)
+		bytes, err := g.is.Create(gallery.ID, file, f.Filename)
 		if err != nil {
 			vd.SetAlert(err)
 			g.EditView.Render(w, r, vd)

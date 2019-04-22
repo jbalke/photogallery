@@ -11,6 +11,7 @@ func NewServices(connectionInfo string, logging bool) (*Services, error) {
 	return &Services{
 		User:    NewUserService(db),
 		Gallery: NewGalleryService(db),
+		Image:   NewImageService(),
 		db:      db,
 	}, nil
 }
@@ -18,6 +19,7 @@ func NewServices(connectionInfo string, logging bool) (*Services, error) {
 // Services contains all of our services
 type Services struct {
 	Gallery GalleryService
+	Image   ImageService
 	User    UserService
 	db      *gorm.DB
 }
