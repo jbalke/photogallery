@@ -9,8 +9,9 @@ import (
 // Gallery is our image container resource
 type Gallery struct {
 	gorm.Model
-	UserID uint   `gorm:"not null;index"`
-	Title  string `gorm:"not null"`
+	UserID uint     `gorm:"not null;index"`
+	Title  string   `gorm:"not null"`
+	Images []string `gorm:"-"`
 }
 
 type GalleryService interface {

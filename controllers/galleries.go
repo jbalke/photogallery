@@ -206,6 +206,8 @@ func (g *Galleries) galleryByID(w http.ResponseWriter, r *http.Request) (*models
 		}
 		return nil, err
 	}
+	images, err := g.is.ByGalleryID(gallery.ID)
+	gallery.Images = images
 	return gallery, nil
 }
 
@@ -220,7 +222,6 @@ func (g *Galleries) ImageUpload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Gallery not found", http.StatusNotFound)
 		return
 	}
-	// TODO: parse a multipart form
 	var vd views.Data
 	vd.Yield = gallery
 	err = r.ParseMultipartForm(maxMultipartMem)
@@ -242,12 +243,17 @@ func (g *Galleries) ImageUpload(w http.ResponseWriter, r *http.Request) {
 		}
 		defer file.Close()
 
-		bytes, err := g.is.Create(gallery.ID, file, f.Filename)
+		_, err = g.is.Create(gallery.ID, file, f.Filename)
 		if err != nil {
 			vd.SetAlert(err)
 			g.EditView.Render(w, r, vd)
 			return
 		}
-		fmt.Fprintf(w, "File successfully uploaded (%d bytes)\n", bytes)
 	}
+	url, err := g.r.Get(EditGallery).URL("id", fmt.Sprintf("%v", gallery.ID))
+	if err != nil {
+		http.Redirect(w, r, "/galleries", http.StatusFound)
+		return
+	}
+	http.Redirect(w, r, url.Path, http.StatusFound)
 }
