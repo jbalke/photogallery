@@ -49,6 +49,10 @@ func main() {
 	r.HandleFunc("/signup", usersController.Create).Methods("POST")
 	r.HandleFunc("/cookietest", usersController.CookieTest).Methods("GET")
 
+	// Image routes
+	imageHandler := http.FileServer(http.Dir("./images"))
+	r.PathPrefix("/images/").Handler(http.StripPrefix("/images/", imageHandler))
+
 	// Galleries middleware & routes
 	requireUserMw := middleware.RequireUser{
 		User: userMw,
@@ -62,7 +66,7 @@ func main() {
 	r.HandleFunc("/galleries/{id:[0-9]+}/images", requireUserMw.ApplyFN(galleriesController.ImageUpload)).Methods("POST")
 	r.HandleFunc("/galleries/{id:[0-9]+}/delete", requireUserMw.ApplyFN(galleriesController.Delete)).Methods("POST")
 	r.HandleFunc("/galleries/{id:[0-9]+}", galleriesController.Show).Methods("GET").Name(controllers.ShowGallery)
-	fmt.Println("Server listening on port", httpPort)
+	log.Println("Server listening on port", httpPort)
 	log.Fatal(http.ListenAndServe(httpPort, userMw.Apply(r)))
 }
 

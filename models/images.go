@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const (
@@ -67,9 +68,18 @@ func (is *imageService) ByGalleryID(galleryID uint) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	for i := range strings {
+		strings[i] = "/" + fwdSlashSeparators(strings[i])
+	}
 	return strings, nil
 }
 
 func (is *imageService) imagePath(galleryID uint) string {
 	return fmt.Sprintf("%s/%v/", imagePath, galleryID)
+}
+
+// On Windows the path separator "\" triggers html escaping,
+// so replace with unix path separators
+func fwdSlashSeparators(path string) string {
+	return strings.ReplaceAll(path, "\\", "/")
 }

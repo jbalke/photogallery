@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"html/template"
 	"io"
+	"log"
 	"net/http"
 	"path/filepath"
 
@@ -53,6 +54,7 @@ func (v *View) Render(w http.ResponseWriter, r *http.Request, data interface{}) 
 	// write to buf to capture any errors and copy to w if all is ok.
 	var buf bytes.Buffer
 	if err := v.Template.ExecuteTemplate(&buf, v.Layout, vd); err != nil {
+		log.Println(err)
 		http.Error(w, "Something went wrong. If the problem persists, please email support@lenslocked.com", http.StatusInternalServerError)
 		return
 	}
