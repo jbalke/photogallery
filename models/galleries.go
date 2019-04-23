@@ -9,17 +9,17 @@ import (
 // Gallery is our image container resource
 type Gallery struct {
 	gorm.Model
-	UserID uint     `gorm:"not null;index"`
-	Title  string   `gorm:"not null"`
-	Images []string `gorm:"-"`
+	UserID uint    `gorm:"not null;index"`
+	Title  string  `gorm:"not null"`
+	Images []Image `gorm:"-"`
 }
 
 // ImagesSplitN sorts the images into N buckets for optimal
 // placement in a bootstrap grid layout of N columns
-func (g *Gallery) ImagesSplitN(n int) [][]string {
-	ret := make([][]string, n)
+func (g *Gallery) ImagesSplitN(n int) [][]Image {
+	ret := make([][]Image, n)
 	for i := 0; i < n; i++ {
-		ret[i] = make([]string, 0)
+		ret[i] = make([]Image, 0)
 	}
 
 	for i, img := range g.Images {

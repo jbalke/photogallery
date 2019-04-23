@@ -1,7 +1,8 @@
 {{define "yield"}}
 <div class="row">
-    <div class=" col-md-12">
+    <div class="col-md-12">
         <h1>{{.Title}}</h1>
+        <a href="/galleries/{{.ID}}/edit">Edit</a>
         <hr>
     </div>
 </div>
@@ -11,8 +12,8 @@
     {{range .ImagesSplitN 3}}
         <div class="col-md-4">
         {{range .}}
-            <a href="{{.}}">
-                <img src="{{.}}" alt="Gallery Image" class="img-thumbnail mb-2">
+            <a href="{{.Path}}">
+                <img src="{{.Path}}" alt="Gallery Image" class="img-thumbnail mb-2">
             </a>
         {{end}}
         </div>

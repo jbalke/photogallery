@@ -12,22 +12,45 @@ const (
 	imagePath = "images/galleries"
 )
 
+type Image struct {
+	GalleryID uint
+	Filename  string
+}
+
+func (i *Image) Path() string {
+	return "/" + i.RelativePath()
+}
+
+func (i *Image) RelativePath() string {
+	return fmt.Sprintf("%s/%v/%v", imagePath, i.GalleryID, i.Filename)
+}
+
 type ImageService interface {
 	Create(galleryID uint, r io.ReadCloser, filename string) (int64, error)
-	ByGalleryID(galleryID uint) ([]string, error)
+	ByGalleryID(galleryID uint) ([]Image, error)
+	Delete(i *Image) error
+	DeleteAll(galleryID uint) error
 }
 
 type imageValidator struct {
 	ImageService
 }
 
-var _ ImageService = &imageService{}
+var _ ImageService = &imageValidator{&imageService{}}
 
 func NewImageService() ImageService {
 	return &imageService{}
 }
 
 type imageService struct{}
+
+func (is *imageService) Delete(i *Image) error {
+	return os.Remove(i.RelativePath())
+}
+
+func (is *imageService) DeleteAll(galleryID uint) error {
+	return os.RemoveAll(fmt.Sprintf("%s/%d", imagePath, galleryID))
+}
 
 func (is *imageService) Create(galleryID uint, r io.ReadCloser, filename string) (int64, error) {
 	defer r.Close()
@@ -62,16 +85,22 @@ func (is *imageService) mkImagePath(galleryID uint) (string, error) {
 	return galleryPath, nil
 }
 
-func (is *imageService) ByGalleryID(galleryID uint) ([]string, error) {
+func (is *imageService) ByGalleryID(galleryID uint) ([]Image, error) {
 	path := is.imagePath(galleryID)
-	strings, err := filepath.Glob(path + "*")
+	imageStrings, err := filepath.Glob(path + "*")
 	if err != nil {
 		return nil, err
 	}
-	for i := range strings {
-		strings[i] = "/" + fwdSlashSeparators(strings[i])
+	ret := make([]Image, len(imageStrings))
+	for i := range imageStrings {
+		imageStrings[i] = fwdSlashSeparators(imageStrings[i])
+		imageStrings[i] = strings.Replace(imageStrings[i], path, "", 1)
+		ret[i] = Image{
+			Filename:  imageStrings[i],
+			GalleryID: galleryID,
+		}
 	}
-	return strings, nil
+	return ret, nil
 }
 
 func (is *imageService) imagePath(galleryID uint) string {
