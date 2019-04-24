@@ -11,10 +11,6 @@ type User struct {
 	models.UserService
 }
 
-type RequireUser struct {
-	User
-}
-
 func (mw *User) Apply(next http.Handler) http.HandlerFunc {
 	return mw.ApplyFN(next.ServeHTTP)
 }
@@ -35,6 +31,12 @@ func (mw *User) ApplyFN(next http.HandlerFunc) http.HandlerFunc {
 		r = r.WithContext(ctx)
 		next(w, r)
 	})
+}
+
+// RequireUser assumes that User middleware has already been run
+// otherwise it will not work.
+type RequireUser struct {
+	User
 }
 
 func (mw *RequireUser) Apply(next http.Handler) http.HandlerFunc {

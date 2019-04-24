@@ -7,6 +7,8 @@ import (
 )
 
 const (
+	// user a private type to ensure that there's no chance of collision with
+	// other context values of the same name (but different type)
 	userKey privateKey = "user"
 )
 

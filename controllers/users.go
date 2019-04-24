@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"lenslocked.com/models"
@@ -88,7 +87,6 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 	var form LoginForm
 
 	if err := ParseForm(r, &form); err != nil {
-		log.Println(err)
 		vd.SetAlert(err)
 		u.LoginView.Render(w, r, vd)
 		return
@@ -109,7 +107,6 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 
 	err = u.signIn(w, user)
 	if err != nil {
-		log.Println(err)
 		vd.SetAlert(err)
 		u.LoginView.Render(w, r, vd)
 		return
@@ -134,8 +131,7 @@ func (u *Users) signIn(w http.ResponseWriter, user *models.User) error {
 	cookie := http.Cookie{
 		Name:     "remember_token",
 		Value:    user.Remember,
-		MaxAge:   60 * 60, // 1 hr
-		HttpOnly: true,    // prevents non-http access to cookie e.g. from client javascript
+		HttpOnly: true, // prevents non-http access to cookie e.g. from client javascript
 	}
 	http.SetCookie(w, &cookie)
 	return nil
