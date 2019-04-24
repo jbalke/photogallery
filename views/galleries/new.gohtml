@@ -13,6 +13,7 @@
 
 {{define "galleryForm"}}
 <form action="/galleries" method="POST">
+  {{csrfField}}
   <div class="form-group">
     <label for="title" class="font-weight-bold">Title</label>
     <input

@@ -14,6 +14,9 @@ func ParseForm(r *http.Request, dst interface{}) error {
 		return err
 	}
 
+	// ignore unknown keys so we can use gorilla csrf tokens
+	dec.IgnoreUnknownKeys(true)
+
 	if err := dec.Decode(dst, r.PostForm); err != nil {
 		return err
 	}

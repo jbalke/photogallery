@@ -13,6 +13,7 @@
 
 {{define "signupForm"}}
 <form action="/signup" method="POST">
+  {{csrfField}}
   <div class="form-group">
     <label for="name" class="font-weight-bold">Name</label>
     <input
