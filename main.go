@@ -23,6 +23,7 @@ const (
 
 // TODO: Use Gorilla Session to make use of Flash messages and sessions
 // OR: https://www.alexedwards.net/blog/simple-flash-messages-in-golang
+// TODO: Added a 404 page
 func main() {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 	services, err := models.NewServices(psqlInfo, true)
@@ -48,6 +49,10 @@ func main() {
 	r.HandleFunc("/signup", usersController.New).Methods("GET")
 	r.HandleFunc("/signup", usersController.Create).Methods("POST")
 	r.HandleFunc("/cookietest", usersController.CookieTest).Methods("GET")
+
+	// Static assets
+	assetHandler := http.FileServer(http.Dir("./assets"))
+	r.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", assetHandler))
 
 	// Image routes
 	imageHandler := http.FileServer(http.Dir("./images"))
