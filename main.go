@@ -14,21 +14,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const (
-	host     = "localhost"
-	port     = 5432
-	user     = "postgres"
-	password = "sParhwk72"
-	dbname   = "lenslocked_dev"
-	httpPort = ":3000"
-)
-
 // TODO: Use Gorilla Session to make use of Flash messages and sessions
 // OR: https://www.alexedwards.net/blog/simple-flash-messages-in-golang
 // TODO: Add a 404 page
 func main() {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
-	services, err := models.NewServices(psqlInfo, true)
+	cfg := DefaultConfig()
+	dbCfg := DefaultPostgresConfig()
+	services, err := models.NewServices(dbCfg.ConnectionInfo(), dbCfg.IsLogging())
 	must(err)
 	defer services.Close()
 
@@ -42,9 +34,8 @@ func main() {
 
 	bytes, err := rand.Bytes(32)
 	must(err)
-	// TODO: make this a config variable
-	isProd := false
-	csrfMw := csrf.Protect(bytes, csrf.Secure(isProd))
+
+	csrfMw := csrf.Protect(bytes, csrf.Secure(cfg.IsProd()))
 	userMw := middleware.User{
 		UserService: services.User,
 	}
@@ -79,8 +70,8 @@ func main() {
 	r.HandleFunc("/galleries/{id:[0-9]+}/images/{filename}/delete", requireUserMw.ApplyFN(galleriesController.ImageDelete)).Methods("POST")
 	r.HandleFunc("/galleries/{id:[0-9]+}/delete", requireUserMw.ApplyFN(galleriesController.Delete)).Methods("POST")
 	r.HandleFunc("/galleries/{id:[0-9]+}", galleriesController.Show).Methods("GET").Name(controllers.ShowGallery)
-	log.Println("Server listening on port", httpPort)
-	log.Fatal(http.ListenAndServe(httpPort, csrfMw(userMw.Apply(r))))
+	log.Printf("Server listening on port: %d...\n", cfg.Port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), csrfMw(userMw.Apply(r))))
 }
 
 func must(err error) {
