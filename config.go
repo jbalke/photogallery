@@ -5,10 +5,6 @@ import (
 	"strings"
 )
 
-// const (
-// 	httpPort = ":3000"
-// )
-
 type PostgresConfig struct {
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
@@ -16,11 +12,6 @@ type PostgresConfig struct {
 	Password string `json:"password"`
 	Name     string `json:"name"`
 	SSL      string `json:"ssl"`
-	Logging  bool   `json:"logging"`
-}
-
-func (c PostgresConfig) IsLogging() bool {
-	return c.Logging
 }
 
 func (c PostgresConfig) Dialect() string {
@@ -42,13 +33,14 @@ func DefaultPostgresConfig() PostgresConfig {
 		Password: "sParhwk72",
 		Name:     "lenslocked_dev",
 		SSL:      "disable",
-		Logging:  false,
 	}
 }
 
 type Config struct {
-	Port int
-	Env  string
+	Port    int    `json:"port"`
+	Env     string `json:"env"`
+	Pepper  string `json:"pepper"`
+	HMACKey string `json:"hmac_key"`
 }
 
 func (c Config) IsProd() bool {
@@ -57,17 +49,12 @@ func (c Config) IsProd() bool {
 
 func DefaultConfig() Config {
 	return Config{
-		Port: 3000,
-		Env:  "dev",
+		Port:    3000,
+		Env:     "dev",
+		Pepper:  "7SZ5t9epC5RFv&*",
+		HMACKey: "secret-key",
 	}
 }
-
-// isProd := false
-
-// const (
-// 	userPwPepper      = "7SZ5t9epC5RFv&*"
-// 	hmacSecretKey     = "secret-key"
-// )
 
 // db, err := gorm.Open("postgres", connectionInfo)
 // 	if err != nil {
