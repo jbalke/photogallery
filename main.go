@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -18,8 +19,11 @@ import (
 // OR: https://www.alexedwards.net/blog/simple-flash-messages-in-golang
 // TODO: Add a 404 page
 func main() {
-	cfg := DefaultConfig()
-	dbCfg := DefaultPostgresConfig()
+	prodPtr := flag.Bool("prod", false, "Include this flag in production. This ensures use of .config for application settings and will panic instead of using dev defaults.")
+	flag.Parse()
+
+	cfg := LoadConfig(*prodPtr)
+	dbCfg := cfg.Database
 	services, err := models.NewServices(
 		models.WithGorm(dbCfg.Dialect(), dbCfg.ConnectionInfo()),
 		models.WithUser(cfg.HMACKey, cfg.Pepper),

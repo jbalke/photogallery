@@ -1,7 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 )
 
@@ -37,10 +40,11 @@ func DefaultPostgresConfig() PostgresConfig {
 }
 
 type Config struct {
-	Port    int    `json:"port"`
-	Env     string `json:"env"`
-	Pepper  string `json:"pepper"`
-	HMACKey string `json:"hmac_key"`
+	Port     int            `json:"port"`
+	Env      string         `json:"env"`
+	Pepper   string         `json:"pepper"`
+	HMACKey  string         `json:"hmac_key"`
+	Database PostgresConfig `json:"database"`
 }
 
 func (c Config) IsProd() bool {
@@ -49,15 +53,29 @@ func (c Config) IsProd() bool {
 
 func DefaultConfig() Config {
 	return Config{
-		Port:    3000,
-		Env:     "dev",
-		Pepper:  "7SZ5t9epC5RFv&*",
-		HMACKey: "secret-key",
+		Port:     3000,
+		Env:      "dev",
+		Pepper:   "7SZ5t9epC5RFv&*",
+		HMACKey:  "secret-key",
+		Database: DefaultPostgresConfig(),
 	}
 }
 
-// db, err := gorm.Open("postgres", connectionInfo)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	db.LogMode(logging)
+func LoadConfig(configReq bool) Config {
+	f, err := os.Open(".config")
+	if err != nil {
+		if configReq {
+			panic(err)
+		}
+		log.Println("Using default config...")
+		return DefaultConfig()
+	}
+	var c Config
+	dec := json.NewDecoder(f)
+	err = dec.Decode(&c)
+	if err != nil {
+		panic(err)
+	}
+	log.Println("Sucessfully loaded config from .config")
+	return c
+}
