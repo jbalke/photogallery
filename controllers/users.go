@@ -71,8 +71,12 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
-	//fmt.Fprintln(w, user)
-	http.Redirect(w, r, "/galleries", http.StatusFound)
+	alert := views.Alert{
+		Level:   views.AlertLvlSuccess,
+		Message: "Welcome to LensLocked.com!",
+	}
+	//http.Redirect(w, r, "/galleries", http.StatusFound)
+	views.RedirectAlert(w, r, "/galleries", http.StatusFound, alert)
 }
 
 type LoginForm struct {
@@ -113,7 +117,12 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 		u.LoginView.Render(w, r, vd)
 		return
 	}
-	http.Redirect(w, r, "/galleries", http.StatusFound)
+	alert := views.Alert{
+		Level:   views.AlertLvlSuccess,
+		Message: fmt.Sprintf("Welcome back%s!", " "+user.Name),
+	}
+	views.RedirectAlert(w, r, "/galleries", http.StatusFound, alert)
+	//http.Redirect(w, r, "/galleries", http.StatusFound)
 }
 
 // Logout is used to delete a user's session cookie and update their remember token

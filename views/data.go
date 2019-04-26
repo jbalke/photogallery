@@ -2,6 +2,8 @@ package views
 
 import (
 	"log"
+	"net/http"
+	"time"
 
 	"lenslocked.com/models"
 )
@@ -14,6 +16,10 @@ const (
 
 	// AlertMsgGeneric is displayed when a random error is encountered in out backend.
 	AlertMsgGeneric = "Something went wrong. Please try again, and contact us if the problem persists."
+	// AlertLevel is the name of our cookie for persisting alert level for flash alerts.
+	AlertLevel = "alert_level"
+	// AlertMessage is the name of our cookie for persisting alert messages for flash alerts.
+	AlertMessage = "alert_message"
 )
 
 // Alert is used to render Bootstrap alert messages in templates
@@ -56,4 +62,60 @@ func (d *Data) AlertError(msg string) {
 type PublicError interface {
 	error
 	Public() string
+}
+
+func persistAlert(w http.ResponseWriter, alert Alert) {
+	expiresAt := time.Now().Add(time.Minute)
+	lvl := http.Cookie{
+		Name:     AlertLevel,
+		Value:    alert.Level,
+		Expires:  expiresAt,
+		HttpOnly: true,
+	}
+	msg := http.Cookie{
+		Name:     AlertMessage,
+		Value:    alert.Message,
+		Expires:  expiresAt,
+		HttpOnly: true,
+	}
+	http.SetCookie(w, &lvl)
+	http.SetCookie(w, &msg)
+}
+
+func clearAlert(w http.ResponseWriter) {
+	expiresAt := time.Now()
+	lvl := http.Cookie{
+		Name:     AlertLevel,
+		Value:    "",
+		Expires:  expiresAt,
+		HttpOnly: true,
+	}
+	msg := http.Cookie{
+		Name:     AlertMessage,
+		Value:    "",
+		Expires:  expiresAt,
+		HttpOnly: true,
+	}
+	http.SetCookie(w, &lvl)
+	http.SetCookie(w, &msg)
+}
+
+func getAlert(r *http.Request) *Alert {
+	lvl, err := r.Cookie(AlertLevel)
+	if err != nil {
+		return nil
+	}
+	msg, err := r.Cookie(AlertMessage)
+	if err != nil {
+		return nil
+	}
+	return &Alert{
+		Level:   lvl.Value,
+		Message: msg.Value,
+	}
+}
+
+func RedirectAlert(w http.ResponseWriter, r *http.Request, urlString string, code int, alert Alert) {
+	persistAlert(w, alert)
+	http.Redirect(w, r, urlString, code)
 }

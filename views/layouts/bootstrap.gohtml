@@ -19,7 +19,7 @@
     {{template "navbar" .}}
     <main class="container-fluid">
       {{if .Alert}}
-      {{template "alert" .Alert}}
+        {{template "alert" .Alert}}
       {{ end }}
       {{template "yield" .Yield}}
     </main>

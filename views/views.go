@@ -59,6 +59,10 @@ func (v *View) Render(w http.ResponseWriter, r *http.Request, data interface{}) 
 			Yield: data,
 		}
 	}
+	if alert := getAlert(r); alert != nil {
+		vd.Alert = alert
+		clearAlert(w)
+	}
 	vd.User = context.User(r.Context())
 	// write to buf to capture any errors and copy to w if all is ok.
 	var buf bytes.Buffer
