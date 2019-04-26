@@ -30,7 +30,7 @@
     <ul class="navbar-nav">
       {{if .User}}
         <li class="nav-item">
-          <a href="/logout" class="nav-link">Log Out</a>
+          {{template "logoutForm"}}
         </li>
       {{else}}
         <li class="nav-item">
@@ -44,3 +44,10 @@
   </div>
 </nav>
 {{ end }}
+
+{{define "logoutForm"}}
+<form class="form-inline" action="/logout" method="post">
+  {{csrfField}}
+  <button type="submit" class="btn btn-outline-secondary">Log out</button>
+</form>
+{{end}}

@@ -49,11 +49,15 @@ func main() {
 	userMw := middleware.User{
 		UserService: services.User,
 	}
+	requireUserMw := middleware.RequireUser{
+		User: userMw,
+	}
 
 	r.Handle("/", staticController.Home).Methods("GET")
 	r.Handle("/contact", staticController.Contact).Methods("GET")
 	r.Handle("/login", usersController.LoginView).Methods("GET")
 	r.HandleFunc("/login", usersController.Login).Methods("POST")
+	r.HandleFunc("/logout", requireUserMw.ApplyFN(usersController.Logout)).Methods("POST")
 	r.HandleFunc("/signup", usersController.New).Methods("GET")
 	r.HandleFunc("/signup", usersController.Create).Methods("POST")
 	r.HandleFunc("/cookietest", usersController.CookieTest).Methods("GET")
@@ -67,9 +71,6 @@ func main() {
 	r.PathPrefix("/images/").Handler(http.StripPrefix("/images/", imageHandler))
 
 	// Galleries middleware & routes
-	requireUserMw := middleware.RequireUser{
-		User: userMw,
-	}
 
 	r.HandleFunc("/galleries", requireUserMw.ApplyFN(galleriesController.Index)).Methods("GET")
 	r.Handle("/galleries/new", requireUserMw.Apply(galleriesController.New)).Methods("GET")
