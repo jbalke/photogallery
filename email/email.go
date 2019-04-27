@@ -1,4 +1,4 @@
-package controllers
+package email
 
 import (
 	"fmt"
@@ -6,24 +6,24 @@ import (
 	mailgun "gopkg.in/mailgun/mailgun-go.v1"
 )
 
-type MailClient interface {
+type Client interface {
 	Send(name, toAddress, subject, textBody, htmlBody string) error
 }
 
 type mgClient struct {
-	From string
+	from string
 	mg   mailgun.Mailgun
 }
 
-func NewMailClient(domain, apiKey, publicKey string) MailClient {
+func NewMailClient(domain, apiKey, publicKey string) Client {
 	return &mgClient{
-		From: "Support <support@lenslocked.com>",
+		from: "Support <support@lenslocked.com>",
 		mg:   mailgun.NewMailgun(domain, apiKey, publicKey),
 	}
 }
 
 func (mc *mgClient) Send(name, toAddress, subject, textBody, htmlBody string) error {
-	msg := mc.mg.NewMessage(mc.From, subject, textBody, buildEmailField(name, toAddress))
+	msg := mc.mg.NewMessage(mc.from, subject, textBody, buildEmailField(name, toAddress))
 	msg.SetHtml(htmlBody)
 	_, _, err := mc.mg.Send(msg)
 	return err

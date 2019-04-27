@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"lenslocked.com/context"
+	"lenslocked.com/email"
 	"lenslocked.com/models"
 	"lenslocked.com/rand"
 	"lenslocked.com/views"
@@ -29,7 +30,7 @@ const (
 // NewUsers is used to create a new Users controller.
 // This function will panic if the templates are not parsed
 // correctly so should only be used during initial setup.
-func NewUsers(us models.UserService, mc MailClient) *Users {
+func NewUsers(us models.UserService, mc email.Client) *Users {
 	return &Users{
 		NewView:   views.NewView("bootstrap", "users/new"),
 		LoginView: views.NewView("bootstrap", "users/login"),
@@ -42,7 +43,7 @@ type Users struct {
 	NewView   *views.View
 	LoginView *views.View
 	us        models.UserService
-	mc        MailClient
+	mc        email.Client
 }
 
 // New is used to render the signup form.

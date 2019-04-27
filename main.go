@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"lenslocked.com/controllers"
+	"lenslocked.com/email"
 	"lenslocked.com/middleware"
 	"lenslocked.com/models"
 	"lenslocked.com/rand"
@@ -38,9 +39,10 @@ func main() {
 	services.AutoMigrate()
 
 	r := mux.NewRouter()
-	mailController := controllers.NewMailClient(cfg.Email.Domain, cfg.Email.APIKey, cfg.Email.PublicKey)
+	mailCfg := cfg.Email
+	emailer := email.NewMailClient(mailCfg.Domain, mailCfg.APIKey, mailCfg.PublicKey)
 	staticController := controllers.NewStatic()
-	usersController := controllers.NewUsers(services.User, mailController)
+	usersController := controllers.NewUsers(services.User, emailer)
 	galleriesController := controllers.NewGalleries(services.Gallery, services.Image, r)
 
 	bytes, err := rand.Bytes(32)
@@ -54,14 +56,17 @@ func main() {
 		User: userMw,
 	}
 
+	// Static page routes
 	r.Handle("/", staticController.Home).Methods("GET")
 	r.Handle("/contact", staticController.Contact).Methods("GET")
+
+	// User routes
 	r.Handle("/login", usersController.LoginView).Methods("GET")
 	r.HandleFunc("/login", usersController.Login).Methods("POST")
 	r.HandleFunc("/logout", requireUserMw.ApplyFN(usersController.Logout)).Methods("POST")
 	r.HandleFunc("/signup", usersController.New).Methods("GET")
 	r.HandleFunc("/signup", usersController.Create).Methods("POST")
-	r.HandleFunc("/cookietest", usersController.CookieTest).Methods("GET")
+	//r.HandleFunc("/cookietest", usersController.CookieTest).Methods("GET")
 
 	// Static assets
 	assetHandler := http.FileServer(http.Dir("./assets"))
@@ -72,7 +77,6 @@ func main() {
 	r.PathPrefix("/images/").Handler(http.StripPrefix("/images/", imageHandler))
 
 	// Galleries middleware & routes
-
 	r.HandleFunc("/galleries", requireUserMw.ApplyFN(galleriesController.Index)).Methods("GET")
 	r.Handle("/galleries/new", requireUserMw.Apply(galleriesController.New)).Methods("GET")
 	r.HandleFunc("/galleries", requireUserMw.ApplyFN(galleriesController.Create)).Methods("POST")
