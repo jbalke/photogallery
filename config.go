@@ -39,12 +39,19 @@ func DefaultPostgresConfig() PostgresConfig {
 	}
 }
 
+type MailGunConfig struct {
+	Domain    string `json:"domain"`
+	APIKey    string `json:"api_key"`
+	PublicKey string `json:"public_key"`
+}
+
 type Config struct {
 	Port     int            `json:"port"`
 	Env      string         `json:"env"`
 	Pepper   string         `json:"pepper"`
 	HMACKey  string         `json:"hmac_key"`
 	Database PostgresConfig `json:"database"`
+	Email    MailGunConfig  `json:"email"`
 }
 
 func (c Config) IsProd() bool {

@@ -38,8 +38,9 @@ func main() {
 	services.AutoMigrate()
 
 	r := mux.NewRouter()
+	mailController := controllers.NewMailClient(cfg.Email.Domain, cfg.Email.APIKey, cfg.Email.PublicKey)
 	staticController := controllers.NewStatic()
-	usersController := controllers.NewUsers(services.User)
+	usersController := controllers.NewUsers(services.User, mailController)
 	galleriesController := controllers.NewGalleries(services.Gallery, services.Image, r)
 
 	bytes, err := rand.Bytes(32)

@@ -11,14 +11,30 @@ import (
 	"lenslocked.com/views"
 )
 
+const (
+	emailTextBody = `Hi %s!
+	
+	Welcome to Lenslocked.com, we hope you enjoy our site!
+	
+	Best Wishes
+	John`
+
+	emailHTMLBody = `<p>Hi %s!</p>
+	<p>Welcome to <a href="https://www.lenslocked.com">Lenslocked.com</a>!</p>
+	<p>Best Wishes<br>John</p>`
+
+	emailSubject = "Welcome to Lenslocked.com!"
+)
+
 // NewUsers is used to create a new Users controller.
 // This function will panic if the templates are not parsed
 // correctly so should only be used during initial setup.
-func NewUsers(us models.UserService) *Users {
+func NewUsers(us models.UserService, mc MailClient) *Users {
 	return &Users{
 		NewView:   views.NewView("bootstrap", "users/new"),
 		LoginView: views.NewView("bootstrap", "users/login"),
 		us:        us,
+		mc:        mc,
 	}
 }
 
@@ -26,6 +42,7 @@ type Users struct {
 	NewView   *views.View
 	LoginView *views.View
 	us        models.UserService
+	mc        MailClient
 }
 
 // New is used to render the signup form.
@@ -74,6 +91,13 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
+
+	//emailText := fmt.Sprintf(emailTextBody, user.Name)
+	//emailHTML := fmt.Sprintf(emailHTMLBody, user.Name)
+
+	// Send welcome email
+	// u.mc.Send(user.Name, user.Email, emailSubject, emailText, emailHTML)
+
 	alert := views.Alert{
 		Level:   views.AlertLvlSuccess,
 		Message: "Welcome to LensLocked.com!",
