@@ -4,7 +4,7 @@
     <div class="card border-primary">
       <h5 class="card-header bg-primary text-white">Sign Up</h5>
       <div class="card-body">
-        {{template "signupForm"}}
+        {{template "signupForm" .}}
       </div>
     </div>
   </div>
@@ -22,6 +22,7 @@
       class="form-control"
       id="name"
       placeholder="Enter your full name"
+      value="{{.Name}}"
     />
   </div>
   <div class="form-group">
@@ -33,6 +34,7 @@
       id="email"
       aria-describedby="emailHelp"
       placeholder="Enter email"
+      value="{{.Email}}"
     />
     <small id="emailHelp" class="form-text text-muted"
       >We'll never share your email with anyone else.</small

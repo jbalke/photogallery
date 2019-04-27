@@ -1,6 +1,7 @@
 package views
 
 import (
+	"encoding/base64"
 	"log"
 	"net/http"
 	"time"
@@ -68,13 +69,13 @@ func persistAlert(w http.ResponseWriter, alert Alert) {
 	expiresAt := time.Now().Add(time.Minute)
 	lvl := http.Cookie{
 		Name:     AlertLevel,
-		Value:    alert.Level,
+		Value:    encode(alert.Level),
 		Expires:  expiresAt,
 		HttpOnly: true,
 	}
 	msg := http.Cookie{
 		Name:     AlertMessage,
-		Value:    alert.Message,
+		Value:    encode(alert.Message),
 		Expires:  expiresAt,
 		HttpOnly: true,
 	}
@@ -110,9 +111,18 @@ func getAlert(r *http.Request) *Alert {
 		return nil
 	}
 	return &Alert{
-		Level:   lvl.Value,
-		Message: msg.Value,
+		Level:   decode(lvl.Value),
+		Message: decode(msg.Value),
 	}
+}
+
+func encode(src string) string {
+	return base64.URLEncoding.EncodeToString([]byte(src))
+}
+
+func decode(src string) string {
+	bytes, _ := base64.URLEncoding.DecodeString(src)
+	return string(bytes)
 }
 
 func RedirectAlert(w http.ResponseWriter, r *http.Request, urlString string, code int, alert Alert) {
