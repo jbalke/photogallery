@@ -23,7 +23,7 @@ const (
 // and password to enable access to their content.
 type User struct {
 	gorm.Model
-	Name         string
+	Name         string `gorm:"not null"`
 	Email        string `gorm:"not null;unique_index"`
 	Password     string `gorm:"-"` // do not store in the DB
 	PasswordHash string `gorm:"not null"`
