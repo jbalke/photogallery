@@ -4,7 +4,7 @@
     <div class="card border-primary">
       <h5 class="card-header bg-primary text-white">Welcome Back!</h5>
       <div class="card-body">
-        {{template "loginForm"}}
+        {{template "loginForm" .}}
       </div>
     </div>
   </div>
@@ -14,6 +14,7 @@
 {{define "loginForm"}}
 <form action="/login" method="POST">
   {{csrfField}}
+  <input type="hidden" name="ref" value={{.Ref}}>
   <div class="form-group">
     <label for="email" class="font-weight-bold">Email address</label>
     <input
@@ -23,6 +24,7 @@
       id="email"
       aria-describedby="emailHelp"
       placeholder="Enter email"
+      value="{{.Email}}"
     />
   </div>
   <div class="form-group">

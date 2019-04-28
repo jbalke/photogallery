@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -56,7 +57,8 @@ func (mw *RequireUser) ApplyFN(next http.HandlerFunc) http.HandlerFunc {
 	return mw.User.ApplyFN(func(w http.ResponseWriter, r *http.Request) {
 		user := context.User(r.Context())
 		if user == nil {
-			http.Redirect(w, r, "/login", http.StatusFound)
+			url := fmt.Sprintf("/login?ref=%s", r.URL.Path)
+			http.Redirect(w, r, url, http.StatusFound)
 			return
 		}
 		next(w, r)

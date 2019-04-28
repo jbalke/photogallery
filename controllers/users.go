@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -110,6 +111,21 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 type LoginForm struct {
 	Email    string `schema:"email"`
 	Password string `schema:"password"`
+	Ref      string `schema:"ref"`
+}
+
+// LoginWithRef renders the login view and parses the "ref" url param that is the url
+// the user requested before being redirected to login by our requireuser middleware.
+//
+// GET /login
+func (u *Users) LoginWithRef(w http.ResponseWriter, r *http.Request) {
+	var vd views.Data
+	var form LoginForm
+
+	vd.Yield = &form
+	err := ParseURLParams(r, &form)
+	log.Println(err)
+	u.LoginView.Render(w, r, vd)
 }
 
 // Login is used to process the login form. This is used to verify a user's email
@@ -120,12 +136,12 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 	var vd views.Data
 	var form LoginForm
 
+	vd.Yield = &form
 	if err := ParseForm(r, &form); err != nil {
 		vd.SetAlert(err)
 		u.LoginView.Render(w, r, vd)
 		return
 	}
-
 	user, err := u.us.Authenticate(form.Email, form.Password)
 
 	if err != nil {
@@ -149,7 +165,14 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 		Level:   views.AlertLvlSuccess,
 		Message: fmt.Sprintf("Welcome back%s!", " "+user.Name),
 	}
-	views.RedirectAlert(w, r, "/galleries", http.StatusFound, alert)
+	var url string
+	if form.Ref != "" {
+		url = form.Ref
+	} else {
+		url = "/galleries"
+	}
+
+	views.RedirectAlert(w, r, url, http.StatusFound, alert)
 	//http.Redirect(w, r, "/galleries", http.StatusFound)
 }
 

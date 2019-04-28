@@ -16,9 +16,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// TODO: Use Gorilla Session to make use of Flash messages and sessions
-// OR: https://www.alexedwards.net/blog/simple-flash-messages-in-golang
 // TODO: Add a 404 page
+// TODO: Change gallery ID to unique id to deter discover without an invite link
 func main() {
 	prodPtr := flag.Bool("prod", false, "Include this flag in production. This ensures use of .config for application settings and will panic instead of using dev defaults.")
 	flag.Parse()
@@ -61,7 +60,7 @@ func main() {
 	r.Handle("/contact", staticController.Contact).Methods("GET")
 
 	// User routes
-	r.Handle("/login", usersController.LoginView).Methods("GET")
+	r.HandleFunc("/login", usersController.LoginWithRef).Methods("GET")
 	r.HandleFunc("/login", usersController.Login).Methods("POST")
 	r.HandleFunc("/logout", requireUserMw.ApplyFN(usersController.Logout)).Methods("POST")
 	r.HandleFunc("/signup", usersController.New).Methods("GET")
