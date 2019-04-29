@@ -60,7 +60,7 @@ func main() {
 	r.Handle("/contact", staticController.Contact).Methods("GET")
 
 	// User routes
-	r.HandleFunc("/login", usersController.LoginWithRef).Methods("GET")
+	r.Handle("/login", usersController.LoginView).Methods("GET")
 	r.HandleFunc("/login", usersController.Login).Methods("POST")
 	r.HandleFunc("/logout", requireUserMw.ApplyFN(usersController.Logout)).Methods("POST")
 	r.HandleFunc("/signup", usersController.New).Methods("GET")

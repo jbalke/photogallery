@@ -2,9 +2,10 @@ package controllers
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"time"
+
+	"lenslocked.com/cookies"
 
 	"lenslocked.com/context"
 	"lenslocked.com/email"
@@ -111,21 +112,6 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 type LoginForm struct {
 	Email    string `schema:"email"`
 	Password string `schema:"password"`
-	Ref      string `schema:"ref"`
-}
-
-// LoginWithRef renders the login view and parses the "ref" url param that is the url
-// the user requested before being redirected to login by our requireuser middleware.
-//
-// GET /login
-func (u *Users) LoginWithRef(w http.ResponseWriter, r *http.Request) {
-	var vd views.Data
-	var form LoginForm
-
-	vd.Yield = &form
-	err := ParseURLParams(r, &form)
-	log.Println(err)
-	u.LoginView.Render(w, r, vd)
 }
 
 // Login is used to process the login form. This is used to verify a user's email
@@ -165,10 +151,9 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 		Level:   views.AlertLvlSuccess,
 		Message: fmt.Sprintf("Welcome back%s!", " "+user.Name),
 	}
-	var url string
-	if form.Ref != "" {
-		url = form.Ref
-	} else {
+	url := cookies.GetRedirect(r)
+	cookies.ClearRedirect(w)
+	if url == "" {
 		url = "/galleries"
 	}
 

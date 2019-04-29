@@ -1,11 +1,11 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
 	"lenslocked.com/context"
+	"lenslocked.com/cookies"
 	"lenslocked.com/models"
 )
 
@@ -57,8 +57,9 @@ func (mw *RequireUser) ApplyFN(next http.HandlerFunc) http.HandlerFunc {
 	return mw.User.ApplyFN(func(w http.ResponseWriter, r *http.Request) {
 		user := context.User(r.Context())
 		if user == nil {
-			url := fmt.Sprintf("/login?ref=%s", r.URL.Path)
-			http.Redirect(w, r, url, http.StatusFound)
+			url := r.URL.Path
+			cookies.SetRedirect(w, url)
+			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
 		next(w, r)
