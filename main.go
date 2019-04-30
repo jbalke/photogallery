@@ -33,13 +33,16 @@ func main() {
 	)
 	must(err)
 	defer services.Close()
-
-	// must(services.DestructiveReset())
 	services.AutoMigrate()
+	// must(services.DestructiveReset())
+
+	mailCfg := cfg.Email
+	emailer := email.NewClient(
+		email.WithSender("Lenslocked.com Support", "support@lenslocked.com"),
+		email.WithMailgun(mailCfg.Domain, mailCfg.APIKey, mailCfg.PublicKey),
+	)
 
 	r := mux.NewRouter()
-	mailCfg := cfg.Email
-	emailer := email.NewMailClient(mailCfg.Domain, mailCfg.APIKey, mailCfg.PublicKey)
 	staticController := controllers.NewStatic()
 	usersController := controllers.NewUsers(services.User, emailer)
 	galleriesController := controllers.NewGalleries(services.Gallery, services.Image, r)
@@ -65,6 +68,10 @@ func main() {
 	r.HandleFunc("/logout", requireUserMw.ApplyFN(usersController.Logout)).Methods("POST")
 	r.HandleFunc("/signup", usersController.New).Methods("GET")
 	r.HandleFunc("/signup", usersController.Create).Methods("POST")
+	r.Handle("/forgot", usersController.ForgotPwView).Methods("GET")
+	r.HandleFunc("/forgot", usersController.InitiateReset).Methods("POST")
+	r.HandleFunc("/reset", usersController.ResetPw).Methods("GET")
+	r.HandleFunc("/reset", usersController.CompleteReset).Methods("POST")
 	//r.HandleFunc("/cookietest", usersController.CookieTest).Methods("GET")
 
 	// Static assets

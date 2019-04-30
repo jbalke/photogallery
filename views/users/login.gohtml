@@ -6,6 +6,9 @@
       <div class="card-body">
         {{template "loginForm" .}}
       </div>
+      <div class="card-footer text-center">
+        <a href="/forgot" class="card-link">Forgot your password?</a>
+      </div>
     </div>
   </div>
 </div>
@@ -14,7 +17,6 @@
 {{define "loginForm"}}
 <form action="/login" method="POST">
   {{csrfField}}
-  <input type="hidden" name="ref" value={{.Ref}}>
   <div class="form-group">
     <label for="email" class="font-weight-bold">Email address</label>
     <input

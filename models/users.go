@@ -2,8 +2,10 @@ package models
 
 import (
 	"errors"
+	"log"
 	"regexp"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/jinzhu/gorm"
@@ -59,6 +61,12 @@ type UserService interface {
 	// user will be returned. Otherwise an error will be returned: ErrNotFound, ErrPasswordIncorrect,
 	// or another if something goes wrong.
 	Authenticate(email, password string) (*User, error)
+	// InitiateReset wwill start the reset password process, returning a reset token
+	// assigned to the user with the provided email address.
+	InitiateReset(email string) (string, error)
+	// CompleteReset ends the reset password process, setting password to be newPw for
+	// the user with the provided token.
+	CompleteReset(token, newPw string) (*User, error)
 	UserDB
 }
 
@@ -70,8 +78,9 @@ func NewUserService(db *gorm.DB, hmacKey, pepper string) UserService {
 	uv := newUserValidator(ug, hmac, pepper)
 
 	return &userService{
-		UserDB: uv,
-		pepper: pepper,
+		UserDB:    uv,
+		pepper:    pepper,
+		pwResetDB: newPwResetValidator(&pwResetGorm{db}, hmac),
 	}
 }
 
@@ -79,7 +88,8 @@ var _ UserService = &userService{}
 
 type userService struct {
 	UserDB
-	pepper string
+	pepper    string
+	pwResetDB pwResetDB
 }
 
 // Authenticate checks for a user with mathcing email and password.
@@ -96,6 +106,45 @@ func (us *userService) Authenticate(email, password string) (*User, error) {
 		default:
 			return nil, err
 		}
+	}
+	return user, nil
+}
+
+func (us *userService) InitiateReset(email string) (string, error) {
+	user, err := us.ByEmail(email)
+	if err != nil {
+		return "", err
+	}
+	pwr := pwReset{UserID: user.ID}
+	if err := us.pwResetDB.Create(&pwr); err != nil {
+		return "", err
+	}
+	return pwr.Token, nil
+}
+
+func (us *userService) CompleteReset(token, newPw string) (*User, error) {
+	pwr, err := us.pwResetDB.ByToken(token)
+	if err != nil {
+		if err == ErrNotFound {
+			return nil, ErrTokenInvalid
+		}
+		return nil, err
+	}
+	if time.Now().Sub(pwr.CreatedAt) > time.Duration(12*time.Hour) {
+		return nil, ErrTokenInvalid
+	}
+
+	user, err := us.ByID(pwr.UserID)
+	if err != nil {
+		return nil, err
+	}
+	user.Password = newPw
+	if err = us.Update(user); err != nil {
+		return nil, err
+	}
+	err = us.pwResetDB.Delete(pwr.ID)
+	if err != nil {
+		log.Println(err)
 	}
 	return user, nil
 }

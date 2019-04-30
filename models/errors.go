@@ -34,6 +34,8 @@ const (
 	// ErrTitleRequired is returned when a user attempts to create a gallery without a title.
 	ErrTitleRequired modelError = "models: title is required"
 
+	ErrTokenInvalid modelError = "models: token provided is invalid"
+
 	// ErrRememberTooShort is returned if a user's remember token is less than 32 bytes.
 	ErrRememberTooShort privateError = "models: remember token must be at least 32 bytes"
 

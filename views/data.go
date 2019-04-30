@@ -53,6 +53,13 @@ func (d *Data) SetAlert(err error) {
 	}
 }
 
+func AlertSuccess(msg string) Alert {
+	return Alert{
+		Level:   AlertLvlSuccess,
+		Message: msg,
+	}
+}
+
 func (d *Data) AlertError(msg string) {
 	d.Alert = &Alert{
 		Level:   AlertLvlError,
@@ -116,6 +123,11 @@ func getAlert(r *http.Request) *Alert {
 	}
 }
 
+func RedirectAlert(w http.ResponseWriter, r *http.Request, urlString string, code int, alert Alert) {
+	persistAlert(w, alert)
+	http.Redirect(w, r, urlString, code)
+}
+
 func encode(src string) string {
 	return base64.URLEncoding.EncodeToString([]byte(src))
 }
@@ -123,9 +135,4 @@ func encode(src string) string {
 func decode(src string) string {
 	bytes, _ := base64.URLEncoding.DecodeString(src)
 	return string(bytes)
-}
-
-func RedirectAlert(w http.ResponseWriter, r *http.Request, urlString string, code int, alert Alert) {
-	persistAlert(w, alert)
-	http.Redirect(w, r, urlString, code)
 }
